@@ -119,7 +119,7 @@ async def callback(code: Optional[str] = None, state: Optional[str] = None):
     refresh_token = tokens.json()['refresh_token']
 
     # Save access token, refresh token, and last fetched timestamp to AWS SSM Parameter Store
-    parameter_store_client = parameterStoreClient(region='us-east-2')
+    parameter_store_client = ParameterStoreClient(region='us-east-2')
     parameter_store_client.create_or_update_parameter(
         parameter_name='spotify_access_token',
         parameter_value=access_token,
