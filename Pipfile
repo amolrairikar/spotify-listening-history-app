@@ -5,8 +5,15 @@ name = "pypi"
 
 [packages]
 streamlit = "*"
+python-dotenv = "*"
+fastapi = "*"
+uvicorn = "*"
+requests = "*"
+boto3 = "*"
+backoff = "*"
 
 [dev-packages]
+coverage = "*"
 
 [requires]
 python_version = "3.12"
