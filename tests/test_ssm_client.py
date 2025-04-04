@@ -1,19 +1,19 @@
-"""Module for testing parameterStoreClient class."""
+"""Module for testing ParameterStoreClient class."""
 import unittest
 from unittest.mock import patch, MagicMock
 
 import botocore
 import botocore.exceptions
 
-from src.lambdas.get_recently_played import parameterStoreClient
+from src.lambdas.get_recently_played import ParameterStoreClient
 
-class testParameterStoreClient(unittest.TestCase):
-    """Class for testing methods in parameterStoreClient class."""
+class TestParameterStoreClient(unittest.TestCase):
+    """Class for testing methods in ParameterStoreClient class."""
 
-    @patch.object(parameterStoreClient, '__init__',lambda x: None)
+    @patch.object(ParameterStoreClient, '__init__',lambda x: None)
     def setUp(self):
         """Sets up each test case."""
-        self.parameterStoreClient = parameterStoreClient()
+        self.parameterStoreClient = ParameterStoreClient()
         self.parameterStoreClient.client = MagicMock()
 
 

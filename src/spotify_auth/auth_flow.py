@@ -12,7 +12,7 @@ import uvicorn
 import requests
 from dotenv import load_dotenv
 
-from src.lambdas.get_recently_played import parameterStoreClient
+from src.lambdas.get_recently_played import ParameterStoreClient
 
 # Load environment variables
 load_dotenv()

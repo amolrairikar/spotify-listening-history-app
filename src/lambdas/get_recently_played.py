@@ -23,7 +23,7 @@ def backoff_on_client_error(func):
     return wrapper
 
 
-class parameterStoreClient:
+class ParameterStoreClient:
     """Class to interact with AWS SSM Parameter Store."""
 
     def __init__(self, region: str):
