@@ -29,7 +29,8 @@ class TestParameterStoreClient(unittest.TestCase):
             {
                 'Error':
                 {
-                    'Code': 'ParameterNotFound', 'Message': 'The parameter was not found.'
+                    'Code': 'ParameterNotFound',
+                    'Message': 'The parameter was not found.'
                 }
             },
             'GetParameter'
@@ -88,8 +89,8 @@ class TestParameterStoreClient(unittest.TestCase):
         self.assertGreater(retry_counter[0], 1)
 
 
-    def test_create_or_update_parameter(self):
-        """Tests the create_or_update_parameter method."""
+    def test_create_or_update_parameter_overwrite(self):
+        """Tests the create_or_update_parameter method with overwrite=True."""
         self.parameterStoreClient.create_or_update_parameter(
             parameter_name='test_parameter',
             parameter_value='test_value',
@@ -104,6 +105,27 @@ class TestParameterStoreClient(unittest.TestCase):
             Value='test_value',
             Type='SecureString',
             Overwrite=True,
+            Tier='Standard',
+            DataType='text'
+        )
+
+
+    def test_create_or_update_parameter_no_overwrite(self):
+        """Tests the create_or_update_parameter method with overwrite=False."""
+        self.parameterStoreClient.create_or_update_parameter(
+            parameter_name='test_parameter',
+            parameter_value='test_value',
+            parameter_type='SecureString',
+            overwrite=False,
+            parameter_description='Test description'
+        )
+
+        self.parameterStoreClient.client.put_parameter.assert_called_once_with(
+            Name='test_parameter',
+            Description='Test description',
+            Value='test_value',
+            Type='SecureString',
+            Overwrite=False,
             Tier='Standard',
             Tags=[
                 {
