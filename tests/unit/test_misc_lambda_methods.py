@@ -17,6 +17,7 @@ from src.lambdas.get_recently_played import (
     convert_json_to_parquet,
     write_parquet_to_s3
 )
+from tests.component.test_lambda_handler import cleanup_parquet_files
 
 
 class TestIsRetryableException(unittest.TestCase):
@@ -233,9 +234,12 @@ class TestConvertJsonToParquet(unittest.TestCase):
         self.temp_dir = TemporaryDirectory()
         self.output_path = os.path.join(self.temp_dir.name, 'test_output.parquet')
 
+
     def tearDown(self):
         """Clean up the temporary directory."""
         self.temp_dir.cleanup()
+        cleanup_parquet_files()
+
 
     def test_valid_json_input(self):
         """Test with a valid nested JSON object."""
@@ -263,19 +267,6 @@ class TestConvertJsonToParquet(unittest.TestCase):
         df = table.to_pandas()
         pd.testing.assert_frame_equal(df, expected_df)
 
-    def test_invalid_output_path(self):
-        """Test with an invalid output path."""
-        json_data = {
-            'track': {
-                'name': 'Song A',
-                'artist': 'Artist A'
-            },
-            'played_at': '2025-01-01T00:00:00Z'
-        }
-        invalid_path = '/invalid_path/test_output.parquet'
-
-        with self.assertRaises(OSError):
-            convert_json_to_parquet(json_data, invalid_path)
 
     def test_json_with_special_characters(self):
         """Test with a JSON object where artist names contain special characters."""

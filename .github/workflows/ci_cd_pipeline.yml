@@ -33,6 +33,8 @@ jobs:
                 pip install pipenv
                 pipenv install --dev
 
-            - name: Run unit tests
-              run: |
-                pipenv run coverage run -m unittest discover -s tests && pipenv run coverage report --omit="tests/*" --fail-under=80
+            - name: Make the test script executable
+              run: chmod +x run_tests.sh
+
+            - name: Run tests
+              run: ./run_tests.sh

@@ -163,13 +163,22 @@ def convert_json_to_parquet(json_data: Dict[str, Any], output_path: str) -> None
     """Converts nested Spotify API response JSON data to Parquet format."""
     df = pd.json_normalize(data=json_data, sep='.')
     table = pa.Table.from_pandas(df)
+
+    # Ensure the directory exists before writing the file
+    output_dir = os.path.dirname(output_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    logger.info('Writing data to Parquet file...')
     pq.write_table(table=table, where=output_path, compression='snappy')
+    logger.info(f'Successfully wrote data to Parquet file at {output_path}')
 
 
 @backoff_on_client_error
 def write_parquet_to_s3(bucket_name: str, object_key: str, file_path: str) -> None:
     """Writes a Parquet file to an S3 bucket."""
-    s3_client = boto3.client('s3', region='us-east-2')  # TODO: Try to avoid hardcoding region
+    s3_client = boto3.client('s3')  # TODO: Try to avoid hardcoding region
+    logger.info(f'Uploading {file_path} to s3://{bucket_name}/{object_key}...')
     s3_client.upload_file(Filename=file_path, Bucket=bucket_name, Key=object_key)
     logger.info(f'Successfully uploaded {file_path} to s3://{bucket_name}/{object_key}')
 
@@ -243,6 +252,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'statusCode': 404,
                 'body': error_message
             }
+        logger.info('Successfully refreshed access token')
     except requests.exceptions.HTTPError as e:
         error_message = f'Failed to refresh access token: {str(e)}'
         logger.error(error_message)
@@ -260,6 +270,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         response = requests.get(url=recently_played_url, headers=headers)
         response.raise_for_status()
         recently_played_data = response.json()
+        logger.info('Successfully fetched recently played tracks')
     except requests.exceptions.HTTPError as e:
         error_message = f'Failed to fetch recently played tracks: {str(e)}'
         logger.error(error_message)
@@ -270,21 +281,22 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     # Convert data into parquet to write to S3
     if recently_played_data.get('items', []):
+        output_path = '/tmp/recently_played_tracks.parquet'
         convert_json_to_parquet(
             json_data=recently_played_data,
-            output_path='/tmp/recently_played_tracks.parquet'
+            output_path=output_path
         )
         # Hardcoding timezone to central for myself
         cst_timezone = pytz.timezone('America/Chicago')
         current_time_cst = datetime.datetime.now(cst_timezone)
-        # Construct partition path as year/month/day
-        partition_path = f'{current_time_cst.year}/{current_time_cst.month}/{current_time_cst.day}\
-            /recently_played_tracks.parquet'
+        current_timestamp = current_time_cst.strftime('%Y%m%d%H%M%S')
+        partition_path = f'{current_time_cst.year}/{current_time_cst.strftime('%m')}/{current_time_cst.strftime('%d')}/recently_played_tracks_{current_timestamp}.parquet'
+        logger.info(f'Partition path: {partition_path}')
         try:
             write_parquet_to_s3(
                 bucket_name=os.environ['S3_BUCKET_NAME'],
                 object_key=partition_path,
-                file_path='/tmp/recently_played_tracks.parquet'
+                file_path=output_path
             )
             logger.info('Successfully wrote data to S3')
         except botocore.exceptions.ClientError as e:
@@ -335,3 +347,24 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 204,
             'body': logger_message
         }
+
+# Uncomment the below code for local testing of the Lambda function
+
+# class MockLambdaContext:
+#     """Mock class for AWS Lambda context."""
+
+#     def __init__(self):
+#         """Initializes mock Lambda context with constant attributes for tests."""
+#         self.aws_request_id = 'test-request-id'
+#         self.function_name = 'test-function-name'
+#         self.function_version = 'test-function-version'
+
+# response = lambda_handler(
+#     event={
+#         'body': {
+#             'code': 'sample_code',
+#             'state': 'sample_state'
+#         }
+#     },
+#     context=MockLambdaContext()
+# )
