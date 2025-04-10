@@ -74,11 +74,11 @@ async def login() -> RedirectResponse:
 
 
 @app.get('/callback')
-async def callback(authorization_code: Optional[str] = None, state: Optional[str] = None):
+async def callback(code: Optional[str] = None, state: Optional[str] = None):
     """Handles the callback from Spotify's authorization server."""
     global stored_state
 
-    if not state or not authorization_code:
+    if not state or not code:
         raise HTTPException(status_code=400, detail='Missing state or authorization_code')
 
     if state != stored_state:
@@ -87,13 +87,13 @@ async def callback(authorization_code: Optional[str] = None, state: Optional[str
     stored_state = None
     tokens = request_access_token(
         authorization_type='initial_auth',
-        auth_token=authorization_code
+        auth_token=code
     )
     refresh_token = tokens.json()['refresh_token']
 
     # Save refresh token, and last fetched timestamp to AWS SSM Parameter Store
     parameter_store_client = ParameterStoreClient(region='us-east-2')
-    if refresh_token is not None or refresh_token is not '':
+    if refresh_token is not None or refresh_token != '':
         parameter_store_client.create_or_update_parameter(
             parameter_name='spotify_refresh_token',
             parameter_value=refresh_token,

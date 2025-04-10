@@ -17,6 +17,7 @@ from src.lambdas.get_recently_played import (
     convert_json_to_parquet,
     write_parquet_to_s3
 )
+from tests.component.test_lambda_handler import cleanup_parquet_files
 
 
 class TestIsRetryableException(unittest.TestCase):
@@ -236,6 +237,7 @@ class TestConvertJsonToParquet(unittest.TestCase):
     def tearDown(self):
         """Clean up the temporary directory."""
         self.temp_dir.cleanup()
+        cleanup_parquet_files()
 
     def test_valid_json_input(self):
         """Test with a valid nested JSON object."""
@@ -263,8 +265,8 @@ class TestConvertJsonToParquet(unittest.TestCase):
         df = table.to_pandas()
         pd.testing.assert_frame_equal(df, expected_df)
 
-    def test_invalid_output_path(self):
-        """Test with an invalid output path."""
+    def test_output_path_not_exists(self):
+        """Test with an output path that does not exist."""
         json_data = {
             'track': {
                 'name': 'Song A',
@@ -273,9 +275,22 @@ class TestConvertJsonToParquet(unittest.TestCase):
             'played_at': '2025-01-01T00:00:00Z'
         }
         invalid_path = '/invalid_path/test_output.parquet'
+        expected_df = pd.DataFrame(
+            [
+                {
+                    'played_at': '2025-01-01T00:00:00Z',
+                    'track.name': 'Song A',
+                    'track.artist': 'Artist A'
+                }
+            ]
+        )
 
-        with self.assertRaises(OSError):
-            convert_json_to_parquet(json_data, invalid_path)
+        convert_json_to_parquet(json_data, invalid_path)
+
+        self.assertTrue(os.path.exists(invalid_path))
+        table = pq.read_table(invalid_path)
+        df = table.to_pandas()
+        pd.testing.assert_frame_equal(df, expected_df)
 
     def test_json_with_special_characters(self):
         """Test with a JSON object where artist names contain special characters."""
