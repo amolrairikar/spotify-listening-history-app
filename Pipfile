@@ -11,8 +11,6 @@ uvicorn = "*"
 requests = "*"
 boto3 = "*"
 backoff = "*"
-pandas = "*"
-pyarrow = "*"
 
 [dev-packages]
 coverage = "*"

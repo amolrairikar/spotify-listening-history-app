@@ -21,16 +21,6 @@ class MockLambdaContext:
         self.function_version = 'test-function-version'
 
 
-def cleanup_parquet_files():
-    """Deletes .parquet files in /tmp directory."""
-    tmp_dir = '/tmp'
-    for filename in os.listdir(tmp_dir):
-        if filename.endswith('.parquet'):
-            file_path = os.path.join(tmp_dir, filename)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-
-
 class TestLambdaHandler(unittest.TestCase):
     """Class for testing the lambda_handler function."""
 
@@ -54,7 +44,6 @@ class TestLambdaHandler(unittest.TestCase):
     def tearDown(self):
         """Stop all patches after each test."""
         self.env_patcher.stop()
-        cleanup_parquet_files()
 
 
     @mock_aws
@@ -270,7 +259,7 @@ class TestLambdaHandler(unittest.TestCase):
             'Authorization': f'Bearer {'test-access-token'}'
         }
 
-        with patch('src.lambdas.get_recently_played.write_parquet_to_s3') as mock_write_s3:
+        with patch('src.lambdas.get_recently_played.write_to_s3') as mock_write_s3:
             mock_write_s3.side_effect = botocore.exceptions.ClientError(
                 {
                     'Error':
@@ -296,6 +285,7 @@ class TestLambdaHandler(unittest.TestCase):
             mock_write_s3.assert_called_once()
 
 
+    @mock_aws
     @patch('src.lambdas.get_recently_played.ParameterStoreClient')
     @patch('src.lambdas.get_recently_played.requests')
     @patch('src.lambdas.get_recently_played.request_access_token')
@@ -328,10 +318,8 @@ class TestLambdaHandler(unittest.TestCase):
             'Authorization': f'Bearer {'test-access-token'}'
         }
 
-        with patch('src.lambdas.get_recently_played.write_parquet_to_s3') as mock_write_s3, \
-             patch('src.lambdas.get_recently_played.convert_json_to_parquet') as mock_convert_parquet:
+        with patch('src.lambdas.get_recently_played.write_to_s3') as mock_write_s3:
             mock_write_s3.return_value = None
-            mock_convert_parquet.return_value = None
 
             response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
 
@@ -358,9 +346,9 @@ class TestLambdaHandler(unittest.TestCase):
                 parameter_description='Spotify refresh token'
             )
             mock_write_s3.assert_called_once()
-            mock_convert_parquet.assert_called_once()
 
 
+    @mock_aws
     @patch('src.lambdas.get_recently_played.get_current_unix_timestamp_milliseconds')
     @patch('src.lambdas.get_recently_played.ParameterStoreClient')
     @patch('src.lambdas.get_recently_played.requests')
@@ -396,10 +384,8 @@ class TestLambdaHandler(unittest.TestCase):
         }
         mock_unix_timestamp.return_value = '1700000000123'
 
-        with patch('src.lambdas.get_recently_played.write_parquet_to_s3') as mock_write_s3, \
-             patch('src.lambdas.get_recently_played.convert_json_to_parquet') as mock_convert_parquet:
+        with patch('src.lambdas.get_recently_played.write_to_s3') as mock_write_s3:
             mock_write_s3.return_value = None
-            mock_convert_parquet.return_value = None
 
             response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
 
@@ -426,7 +412,6 @@ class TestLambdaHandler(unittest.TestCase):
                 parameter_description='Last refresh timestamp for Spotify API'
             )
             mock_write_s3.assert_called_once()
-            mock_convert_parquet.assert_called_once()
 
 
     @mock_aws

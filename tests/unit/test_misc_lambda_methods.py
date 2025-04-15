@@ -2,22 +2,18 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import os
-from tempfile import TemporaryDirectory
+import json
 
 import requests
 import botocore
-import pandas as pd
-import pyarrow.parquet as pq
 
 from src.lambdas.get_recently_played import (
     encode_string,
     request_access_token,
     is_retryable_exception,
     get_current_unix_timestamp_milliseconds,
-    convert_json_to_parquet,
-    write_parquet_to_s3
+    write_to_s3
 )
-from tests.component.test_lambda_handler import cleanup_parquet_files
 
 
 class TestIsRetryableException(unittest.TestCase):
@@ -227,91 +223,25 @@ class TestGetCurrentUnixTimestampMilliseconds(unittest.TestCase):
         self.assertIsInstance(result, str)
 
 
-class TestConvertJsonToParquet(unittest.TestCase):
-    """Class for testing the convert_json_to_parquet method."""
-    def setUp(self):
-        """Set up a temporary directory for test output files."""
-        self.temp_dir = TemporaryDirectory()
-        self.output_path = os.path.join(self.temp_dir.name, 'test_output.parquet')
-
-
-    def tearDown(self):
-        """Clean up the temporary directory."""
-        self.temp_dir.cleanup()
-        cleanup_parquet_files()
-
-
-    def test_valid_json_input(self):
-        """Test with a valid nested JSON object."""
-        json_data = {
-            'track': {
-                'name': 'Song A',
-                'artist': 'Artist A'
-            },
-            'played_at': '2025-01-01T00:00:00Z'
-        }
-        expected_df = pd.DataFrame(
-            [
-                {
-                    'played_at': '2025-01-01T00:00:00Z',
-                    'track.name': 'Song A',
-                    'track.artist': 'Artist A'
-                }
-            ]
-        )
-
-        convert_json_to_parquet(json_data, self.output_path)
-
-        self.assertTrue(os.path.exists(self.output_path))
-        table = pq.read_table(self.output_path)
-        df = table.to_pandas()
-        pd.testing.assert_frame_equal(df, expected_df)
-
-
-    def test_json_with_special_characters(self):
-        """Test with a JSON object where artist names contain special characters."""
-        json_data = {
-            'track': {
-                'name': 'Søng B',
-                'artist': 'Ärtist B'
-            },
-            'played_at': '2025-01-02T00:00:00Z'
-        }
-        expected_df = pd.DataFrame(
-            [
-                {
-                    'played_at': '2025-01-02T00:00:00Z',
-                    'track.name': 'Søng B',
-                    'track.artist': 'Ärtist B'
-                }
-            ]
-        )
-
-        convert_json_to_parquet(json_data, self.output_path)
-
-        self.assertTrue(os.path.exists(self.output_path))
-        table = pq.read_table(self.output_path)
-        df = table.to_pandas()
-        pd.testing.assert_frame_equal(df, expected_df)
-
-
-class TestWriteParquetToS3(unittest.TestCase):
-    """Class for testing the write_parquet_to_s3 method."""
+class TestWriteToS3(unittest.TestCase):
+    """Class for testing the write_to_s3 method."""
 
     @patch('src.lambdas.get_recently_played.boto3.client')
     def test_write_parquet_to_s3_success(self, mock_boto_client):
         """Test writing a Parquet file to S3."""
         mock_s3_client = MagicMock()
         mock_boto_client.return_value = mock_s3_client
+        json_data = {'key': 'value'}
 
-        write_parquet_to_s3(
+        write_to_s3(
             bucket_name='test-bucket',
             object_key='test-key',
-            file_path='/tmp/test.parquet'
+            json_data=json_data
         )
 
-        mock_s3_client.upload_file.assert_called_once_with(
-            Filename='/tmp/test.parquet',
+        mock_s3_client.put_object.assert_called_once_with(
             Bucket='test-bucket',
-            Key='test-key'
+            Key='test-key',
+            Body=json.dumps(json_data),
+            ContentType='application/json'
         )
