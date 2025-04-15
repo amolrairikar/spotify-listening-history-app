@@ -1,0 +1,6 @@
+-i https://pypi.org/simple
+boto3
+botocore
+backoff
+dotenv
+requests

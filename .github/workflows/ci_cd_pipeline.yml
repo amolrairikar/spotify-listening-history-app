@@ -36,5 +36,5 @@ jobs:
             - name: Make the test script executable
               run: chmod +x run_tests.sh
 
-            - name: Run tests
+            - name: Run unit and component tests
               run: ./run_tests.sh

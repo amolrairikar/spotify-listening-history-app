@@ -6,3 +6,9 @@ Running the auth flow manually
 
 Running the lambda handler manually
 `pipenv run python -m src.lambdas.get_recently_played`
+
+To check localstack is working
+`curl http://localhost:4566/_localstack/health`
+
+To start the localstack container
+`docker compose up -d`
