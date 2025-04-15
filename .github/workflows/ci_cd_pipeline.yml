@@ -34,7 +34,7 @@ jobs:
                 pipenv install --dev
 
             - name: Make the test script executable
-              run: chmod +x run_tests.sh
+              run: chmod +x pipeline_scripts/run_tests.sh
 
             - name: Run unit and component tests
-              run: ./run_tests.sh
+              run: ./pipeline_scripts/run_tests.sh
