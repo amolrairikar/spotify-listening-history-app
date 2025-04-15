@@ -39,4 +39,32 @@ jobs:
       - name: Run unit and component tests
         run: ./pipeline_scripts/run_tests.sh
 
-    # integration_tests:
+  integration_tests:
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies for testing
+        run: |
+          python -m pip install --upgrade pip
+          pip install coverage
+          pip install -r src/lambdas/requirements.txt
+
+      - name: Make the test script executable
+        run: chmod +x pipeline_scripts/run_integration_tests.sh
+  
+      - name: Run integration_tests
+        run: ./pipeline_scripts/run_integration_tests.sh
+
+      - name: Upload Lambda zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-zip
+          path: src/lambdas/lambda_function.zip
