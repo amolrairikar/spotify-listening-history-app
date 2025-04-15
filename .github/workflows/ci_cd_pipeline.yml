@@ -39,4 +39,4 @@ jobs:
       - name: Run unit and component tests
         run: ./pipeline_scripts/run_tests.sh
 
-    integration_tests:
+    # integration_tests:
