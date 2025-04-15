@@ -6,13 +6,13 @@ import os
 import logging
 import time
 import datetime
-import pytz
 import json
 
 import boto3
 import botocore
 import botocore.exceptions
 import backoff
+import pytz
 import requests
 from dotenv import load_dotenv
 

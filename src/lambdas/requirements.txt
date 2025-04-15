@@ -3,4 +3,5 @@ boto3
 botocore
 backoff
 dotenv
+pytz
 requests
