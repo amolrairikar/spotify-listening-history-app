@@ -316,14 +316,12 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         recently_played_songs_data = recently_played_data['items']
         # Hardcoding timezone to central for myself
         cst_timezone = pytz.timezone('America/Chicago')
-        current_time_cst = datetime.datetime.now(cst_timezone)
-        current_timestamp = current_time_cst.strftime('%Y%m%d%H%M%S')
-        partition_path = f'{current_time_cst.year}/{current_time_cst.strftime('%m')}/recently_played_tracks_{current_timestamp}.json'
-        logger.info(f'Partition path: {partition_path}')
+        current_timestamp = datetime.datetime.now(cst_timezone).strftime('%Y%m%d%H%M%S')
+        object_path = f'raw/recently_played_tracks_{current_timestamp}.json'
         try:
             write_to_s3(
                 bucket_name=os.environ['S3_BUCKET_NAME'],
-                object_key=partition_path,
+                object_key=object_path,
                 json_data=recently_played_songs_data
             )
             logger.info('Successfully wrote data to S3')
