@@ -168,8 +168,7 @@ class TestRequestAccessToken(unittest.TestCase):
             'https://accounts.spotify.com/api/token',
             data = {
                 'grant_type': 'refresh_token',
-                'refresh_token': 'test_refresh_token',
-                'client_id': 'test_client_id'
+                'refresh_token': 'test_refresh_token'
             },
             headers = {
                 'Authorization': 'Basic dGVzdF9jbGllbnRfaWQ6dGVzdF9jbGllbnRfc2VjcmV0',
