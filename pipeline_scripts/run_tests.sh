@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Stop script execution on any error
-set -e
-
 # Run unit tests
 echo "Running unit tests..."
 if ! pipenv run coverage run --source=src -m unittest discover -s tests/unit; then
