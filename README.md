@@ -3,12 +3,3 @@ Streamlit web app to visualize a user's Spotify listening history
 
 Running the auth flow manually
 `pipenv run python -m src.spotify_auth.auth_flow`
-
-Running the lambda handler manually
-`pipenv run python -m src.lambdas.get_recently_played`
-
-To check localstack is working
-`curl http://localhost:4566/_localstack/health`
-
-To start the localstack container
-`docker compose up -d`
