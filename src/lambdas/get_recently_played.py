@@ -223,7 +223,7 @@ def request_access_token(authorization_type: str, auth_token: str) -> Dict[str, 
         data = {
             'grant_type': 'authorization_code',
             'code': auth_token,
-            'redirect_uri': os.environ['REDIRECT_URI']
+            'redirect_uri': os.getenv('REDIRECT_URI')
         }
     elif authorization_type == 'refresh_auth_token':
         logger.info('Refreshing access token using refresh token')
