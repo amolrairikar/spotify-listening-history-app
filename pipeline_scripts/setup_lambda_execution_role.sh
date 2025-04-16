@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 LAMBDA_ROLE_NAME="spotify-listening-history-lambda-execution-role"
 POLICY_FILE="iam/lambda-execution-policy.json"
 REGION="us-east-2"
