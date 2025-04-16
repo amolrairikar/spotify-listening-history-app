@@ -167,7 +167,7 @@ class TestRequestAccessToken(unittest.TestCase):
         mock_post.assert_called_once_with(
             'https://accounts.spotify.com/api/token',
             data = {
-                'grant_type': 'authorization_code',
+                'grant_type': 'refresh_token',
                 'refresh_token': 'test_refresh_token',
                 'client_id': 'test_client_id'
             },
