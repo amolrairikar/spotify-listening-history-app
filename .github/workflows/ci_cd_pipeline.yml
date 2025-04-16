@@ -92,12 +92,6 @@ jobs:
       - name: List files in the root directory
         run: ls -la
 
-      - name: Move zip to root for deployment script
-        run: mv lambda-zip/lambda_function.zip .
-
-      - name: List files in the root directory
-        run: ls -la
-
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
