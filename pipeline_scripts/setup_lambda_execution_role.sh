@@ -47,7 +47,7 @@ fi
 
 # Substitute the placeholders in the policy file
 sed "s|{{ACCOUNT_ID}}|$ACCOUNT_ID|g; s|{{S3_BUCKET_NAME}}|$S3_BUCKET_NAME|g" \
-    iam/lambda-execution-policy.json.tpl > /tmp/lambda-policy.json
+    iam/lambda-execution-policy.json > /tmp/lambda-policy.json
 check_error "Substituting placeholders in policy file"
 
 echo "Attaching policy to role..."
