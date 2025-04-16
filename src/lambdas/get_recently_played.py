@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Set up logger
+# TODO: convert the logging level into an environment variable
 logger = logging.getLogger('spotify-listening-history-app')
 logger.setLevel(logging.INFO)
 console_handler = logging.StreamHandler()
