@@ -61,8 +61,12 @@ jobs:
       - name: Make the test script executable
         run: chmod +x pipeline_scripts/run_integration_tests.sh
 
-      - name: Set environment variable
-        run: echo "REFRESH_TOKEN=${{ secrets.REFRESH_TOKEN }}" >> $GITHUB_ENV
+      - name: Set environment variables
+        run: |
+          echo "REFRESH_TOKEN=${{ secrets.REFRESH_TOKEN }}" >> $GITHUB_ENV
+          echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> $GITHUB_ENV
+          echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> $GITHUB_ENV
+          echo "S3_BUCKET_NAME=test-bucket" >> $GITHUB_ENV
   
       - name: Run integration_tests
         run: ./pipeline_scripts/run_integration_tests.sh

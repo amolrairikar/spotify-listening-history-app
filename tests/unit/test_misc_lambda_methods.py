@@ -12,8 +12,36 @@ from src.lambdas.get_recently_played import (
     request_access_token,
     is_retryable_exception,
     get_current_unix_timestamp_milliseconds,
-    write_to_s3
+    write_to_s3,
+    is_localstack_running
 )
+
+
+class TestIsLocalstackRunning(unittest.TestCase):
+    """Class for testing is_localstack_running method."""
+
+    @patch('src.lambdas.get_recently_played.requests.get')
+    def test_localstack_running(self, mock_get):
+        """Tests the method returns True when Localstack is running."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {'services': {'s3': 'available', 'lambda': 'available'}}
+        mock_get.return_value = mock_response
+
+        result = is_localstack_running(localstack_health_url='http://localhost:4566/_localstack/health')
+
+        self.assertTrue(result)
+        mock_get.assert_called_once_with('http://localhost:4566/_localstack/health')
+
+    @patch('src.lambdas.get_recently_played.requests.get')
+    def test_localstack_running(self, mock_get):
+        """Tests the method returns False when Localstack is running."""
+        mock_get.side_effect = requests.RequestException('Connection error')
+
+        result = is_localstack_running(localstack_health_url='http://localhost:4566/_localstack/health')
+
+        self.assertFalse(result)
+        mock_get.assert_called_once_with('http://localhost:4566/_localstack/health')
 
 
 class TestIsRetryableException(unittest.TestCase):
@@ -139,9 +167,8 @@ class TestRequestAccessToken(unittest.TestCase):
         mock_post.assert_called_once_with(
             'https://accounts.spotify.com/api/token',
             data = {
-                'grant_type': 'authorization_code',
-                'refresh_token': 'test_refresh_token',
-                'client_id': 'test_client_id'
+                'grant_type': 'refresh_token',
+                'refresh_token': 'test_refresh_token'
             },
             headers = {
                 'Authorization': 'Basic dGVzdF9jbGllbnRfaWQ6dGVzdF9jbGllbnRfc2VjcmV0',

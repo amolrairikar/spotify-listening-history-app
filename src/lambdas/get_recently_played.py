@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Set up logger
+# TODO: convert the logging level into an environment variable
 logger = logging.getLogger('spotify-listening-history-app')
 logger.setLevel(logging.INFO)
 console_handler = logging.StreamHandler()
@@ -27,6 +28,33 @@ console_handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
+
+
+# Function to dynamically determine if LocalStack is running and set endpoint URL accordingly
+def is_localstack_running(localstack_health_url: str):
+    try:
+        response = requests.get(localstack_health_url)
+        if response.status_code == 200:
+            data = response.json()
+            logger.debug(f'LocalStack health check response: {data}')
+            for service, status in data.get('services', {}).items():
+                if status not in ('available', 'running'):
+                    logger.warning(f'LocalStack service {service} is not available.')
+                    return False
+            logger.info('LocalStack is running and all services are available.')
+            return True
+    except requests.RequestException as e:
+        logger.error(f'Error checking LocalStack status', exc_info=True)
+        pass
+    return False
+
+
+if is_localstack_running(localstack_health_url='http://localstack:4566/_localstack/health'):
+    logger.info('Setting endpoint URL to http://localstack:4566')
+    AWS_ENDPOINT_URL = 'http://localstack:4566'
+else:
+    logger.info('Setting endpoint URL to None')
+    AWS_ENDPOINT_URL = None
 
 
 def is_retryable_exception(e: botocore.exceptions.ClientError | requests.exceptions.HTTPError) -> bool:
@@ -37,7 +65,7 @@ def is_retryable_exception(e: botocore.exceptions.ClientError | requests.excepti
         ]
     elif isinstance(e, requests.exceptions.HTTPError):
         return e.response.status_code in [
-            429, 500, 502, 503
+            429, 500, 502, 503, 504
         ]
     return False
 
@@ -50,7 +78,7 @@ def backoff_on_client_error(func):
 
         # If the function is a method, extract `self` or `cls`
         if args and hasattr(args[0], func.__name__):
-            instance_or_class, *args = args  # Extract `self` or `cls`
+            instance_or_class, *args = args
 
         @backoff.on_exception(
             backoff.expo,
@@ -75,7 +103,10 @@ class ParameterStoreClient:
     """Class to interact with AWS SSM Parameter Store."""
 
     def __init__(self, region: str):
-        self.client = boto3.client('ssm', region_name=region)
+        if AWS_ENDPOINT_URL:
+            self.client = boto3.client('ssm', region_name=region, endpoint_url=AWS_ENDPOINT_URL)
+        else:
+            self.client = boto3.client('ssm', region_name=region)
 
 
     @backoff_on_client_error
@@ -161,7 +192,10 @@ def get_current_unix_timestamp_milliseconds() -> str:
 def write_to_s3(bucket_name: str, object_key: str, json_data: str) -> None:
     """Writes JSON data to an S3 bucket."""
     json_string = json.dumps(json_data)
-    s3_client = boto3.client('s3')
+    if AWS_ENDPOINT_URL:
+        s3_client = boto3.client('s3', endpoint_url=AWS_ENDPOINT_URL)
+    else:
+        s3_client = boto3.client('s3')
     logger.info(f'Uploading data to s3://{bucket_name}/{object_key}...')
     s3_client.put_object(
         Bucket=bucket_name,
@@ -179,24 +213,28 @@ def request_access_token(authorization_type: str, auth_token: str) -> Dict[str, 
     encoded_key = encode_string(
         input_string=f'{os.environ["CLIENT_ID"]}:{os.environ["CLIENT_SECRET"]}'
     )
+    # logger.debug(f'Encoded key: {encoded_key}')
     headers = {
         'Authorization': 'Basic ' + encoded_key,
         'content-type': 'application/x-www-form-urlencoded'
     }
     if authorization_type == 'initial_auth':
+        logger.info('Performing manual initial authorization flow')
         data = {
             'grant_type': 'authorization_code',
             'code': auth_token,
             'redirect_uri': os.environ['REDIRECT_URI']
         }
     elif authorization_type == 'refresh_auth_token':
+        logger.info('Refreshing access token using refresh token')
         data = {
-            'grant_type': 'authorization_code',
-            'refresh_token': auth_token,
-            'client_id': os.environ['CLIENT_ID']
+            'grant_type': 'refresh_token',
+            'refresh_token': auth_token
         }
     else:
         raise ValueError('Invalid authorization type. Must be "initial_auth" or "refresh_auth_token".')
+    # logger.debug(f'Request data: {data}')
+    # logger.debug(f'Request headers: {headers}')
     response = requests.post(token_url, data=data, headers=headers)
     response.raise_for_status()
     return response
@@ -215,8 +253,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         parameter_store_client = ParameterStoreClient(region='us-east-2')  # TODO: Try to avoid hardcoding region
         refresh_token = parameter_store_client.get_parameter(parameter_name='refresh_token')
+        # logger.debug(f'Refresh token: {refresh_token}')
         logger.info('Successfully retrieved refresh token from Parameter Store')
         last_refresh_timestamp = parameter_store_client.get_parameter(parameter_name='last_refresh_timestamp')
+        logger.debug(f'Last refresh timestamp: {last_refresh_timestamp}')
         logger.info('Successfully retrieved last refresh timestamp from Parameter Store')
     except botocore.exceptions.ClientError as e:
         error_message = f'Failed to retrieve parameters from Parameter Store: {str(e)}'
@@ -255,6 +295,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     headers = {
         'Authorization': f'Bearer {access_token}'
     }
+    logger.debug(f'Recently played URL: {recently_played_url}')
+    # logger.debug(f'Request header: {headers}')
     try:
         response = requests.get(url=recently_played_url, headers=headers)
         response.raise_for_status()
@@ -333,13 +375,3 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 204,
             'body': logger_message
         }
-
-# response = lambda_handler(
-#     event={
-#         'body': {
-#             'code': 'sample_code',
-#             'state': 'sample_state'
-#         }
-#     },
-#     context=MockLambdaContext()
-# )

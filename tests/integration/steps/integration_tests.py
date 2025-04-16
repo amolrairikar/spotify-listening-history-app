@@ -22,7 +22,7 @@ def create_localstack_client(service_name: str) -> boto3.client:
     """Returns a localstack client for the given service_name at endpoint http://localhost:4566."""
     return boto3.client(
         service_name,
-        region_name='us-east-1',
+        region_name='us-east-2',
         aws_access_key_id='test-access-key',
         aws_secret_access_key='test-secret-key',
         endpoint_url='http://localhost:4566'
@@ -62,7 +62,12 @@ def wait_for_lambda_ready(function_name: str, lambda_client: boto3.client, timeo
 def create_s3_bucket(context: Any, bucket_name: str):
     """Create an S3 bucket on LocalStack."""
     s3_client = create_localstack_client(service_name='s3')
-    s3_client.create_bucket(Bucket=bucket_name)
+    s3_client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={
+            'LocationConstraint': 'us-east-2'
+        }
+    )
     context.s3_client = s3_client
 
     # Ensure the bucket was created successfully
@@ -104,7 +109,7 @@ def create_lambda_function(context: Any, function_name: str, source_path: str):
         for root, _, files in os.walk(site_packages_dir):
             for file in files:
                 full_path = pathlib.Path(root) / file
-                rel_path = full_path.relative_to(build_dir)
+                rel_path = full_path.relative_to(site_packages_dir)
                 zipf.write(full_path, rel_path)
         zipf.write(build_dir / 'get_recently_played.py', 'get_recently_played.py')
 
@@ -122,15 +127,23 @@ def create_lambda_function(context: Any, function_name: str, source_path: str):
         Handler='get_recently_played.lambda_handler',
         Code={'ZipFile': zipped_code},
         Timeout=10,
-        MemorySize=128
+        MemorySize=128,
+        Environment={
+            'Variables': {
+                'REFRESH_TOKEN': os.environ['REFRESH_TOKEN'],
+                'CLIENT_ID': os.environ['CLIENT_ID'],
+                'CLIENT_SECRET': os.environ['CLIENT_SECRET'],
+                'S3_BUCKET_NAME': os.environ['S3_BUCKET_NAME']
+            }
+        }
     )
     wait_for_lambda_ready(function_name=function_name, lambda_client=lambda_client)
 
     assert response['FunctionArn'] is not None
 
 
-@given('a {string_type} SSM parameter named {parameter_name} with value {parameter_value}')
-def create_ssm_parameter(context: Any, string_type: str, parameter_name: str, parameter_value: str):
+@given('a SSM parameter named {parameter_name} with value {parameter_value}')
+def create_ssm_parameter(context: Any, parameter_name: str, parameter_value: str):
     """Create an SSM parameter on LocalStack."""
     ssm_client = create_localstack_client(service_name='ssm')
     if parameter_value == 'REDACTED':
@@ -138,7 +151,7 @@ def create_ssm_parameter(context: Any, string_type: str, parameter_name: str, pa
     ssm_client.put_parameter(
         Name=parameter_name,
         Value=parameter_value,
-        Type=string_type,
+        Type='String',
         Overwrite=True
     )
     context.ssm_client = ssm_client
@@ -146,7 +159,7 @@ def create_ssm_parameter(context: Any, string_type: str, parameter_name: str, pa
 
     # Ensure the parameter was created successfully
     response = ssm_client.get_parameter(Name=parameter_name)
-    assert parameter_value in response['Parameter']['Value']
+    assert response['Parameter']['Value'] == parameter_value
 
 
 @when('we trigger the Lambda function')
@@ -162,8 +175,30 @@ def trigger_lambda(context: Any):
     assert response is not None
 
 
-@then('the lambda function should return a response code of {response_code}')
-def check_lambda_response_code(context: Any, response_code: str):
+@then('the lambda function should complete with status code {status_code}')
+def check_lambda_response_code(context: Any, status_code: str):
     """Check the Lambda function's response code."""
-    assert context.lambda_response['StatusCode'] == int(response_code)
+    payload = json.loads(context.lambda_response['Payload'].read().decode())
+    print(context.lambda_response)
+    print(payload)
+    assert 'FunctionError' not in context.lambda_response
+    assert 'errorMessage' not in payload
+    assert payload['statusCode'] == int(status_code)
+
+
+@then('the S3 bucket {bucket_name} should have an output file')
+def check_s3_bucket_files(context: Any, bucket_name: str):
+    """Checks that an output file is present in the S3 bucket."""
+    s3_client = context.s3_client
+    response = s3_client.list_objects_v2(Bucket=bucket_name)
+    assert 'Contents' in response
+    assert len(response['Contents']) == 1
+
+
+@then('the SSM parameter {parameter_name} should have been updated')
+def check_ssm_parameter_changed(context: Any, parameter_name: str):
+    """Checks that a SSM parameter was updated."""
+    ssm_client = context.ssm_client
+    response = ssm_client.get_parameter(Name=parameter_name)
+    assert response['Parameter']['Value'] != getattr(context, parameter_name)
     
