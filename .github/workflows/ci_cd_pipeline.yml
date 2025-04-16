@@ -104,6 +104,9 @@ jobs:
           chmod +x pipeline_scripts/deploy_lambda.sh
           chmod +x pipeline_scripts/setup_lambda_execution_role.sh
 
+      - name: List files in the iam directory (debuggin)
+        run: ls -la iam
+
       - name: Set up Lambda execution role
         run: ./pipeline_scripts/setup_lambda_execution_role.sh
 
