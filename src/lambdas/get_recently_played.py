@@ -213,7 +213,7 @@ def request_access_token(authorization_type: str, auth_token: str) -> Dict[str, 
     encoded_key = encode_string(
         input_string=f'{os.environ["CLIENT_ID"]}:{os.environ["CLIENT_SECRET"]}'
     )
-    logger.debug(f'Encoded key: {encoded_key}')
+    # logger.debug(f'Encoded key: {encoded_key}')
     headers = {
         'Authorization': 'Basic ' + encoded_key,
         'content-type': 'application/x-www-form-urlencoded'
@@ -233,8 +233,8 @@ def request_access_token(authorization_type: str, auth_token: str) -> Dict[str, 
         }
     else:
         raise ValueError('Invalid authorization type. Must be "initial_auth" or "refresh_auth_token".')
-    logger.debug(f'Request data: {data}')
-    logger.debug(f'Request headers: {headers}')
+    # logger.debug(f'Request data: {data}')
+    # logger.debug(f'Request headers: {headers}')
     response = requests.post(token_url, data=data, headers=headers)
     response.raise_for_status()
     return response
@@ -253,7 +253,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         parameter_store_client = ParameterStoreClient(region='us-east-2')  # TODO: Try to avoid hardcoding region
         refresh_token = parameter_store_client.get_parameter(parameter_name='refresh_token')
-        logger.debug(f'Refresh token: {refresh_token}')
+        # logger.debug(f'Refresh token: {refresh_token}')
         logger.info('Successfully retrieved refresh token from Parameter Store')
         last_refresh_timestamp = parameter_store_client.get_parameter(parameter_name='last_refresh_timestamp')
         logger.debug(f'Last refresh timestamp: {last_refresh_timestamp}')
@@ -296,7 +296,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'Authorization': f'Bearer {access_token}'
     }
     logger.debug(f'Recently played URL: {recently_played_url}')
-    logger.debug(f'Request header: {headers}')
+    # logger.debug(f'Request header: {headers}')
     try:
         response = requests.get(url=recently_played_url, headers=headers)
         response.raise_for_status()
