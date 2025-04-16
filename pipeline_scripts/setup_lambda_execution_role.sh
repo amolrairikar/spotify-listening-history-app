@@ -1,6 +1,12 @@
 #!/bin/bash
 
-set -e
+# Function to check command success
+check_error() {
+    if [ $? -ne 0 ]; then
+        echo "Error: $1 failed." >&2
+        exit 1
+    fi
+}
 
 LAMBDA_ROLE_NAME="spotify-listening-history-lambda-execution-role"
 POLICY_FILE="iam/lambda-execution-policy.json"
@@ -24,6 +30,7 @@ EOF
 
 TRUST_POLICY_FILE="/tmp/trust-policy.json"
 echo "$TRUST_POLICY" > "$TRUST_POLICY_FILE"
+check_error "Creating trust policy file"
 
 echo "Checking if IAM role '$LAMBDA_ROLE_NAME' exists..."
 
@@ -35,11 +42,13 @@ else
         --role-name "$LAMBDA_ROLE_NAME" \
         --assume-role-policy-document "file://$TRUST_POLICY_FILE" \
         --region "$REGION"
+    check_error "Creating IAM role '$LAMBDA_ROLE_NAME'"
 fi
 
 # Substitute the placeholders in the policy file
 sed "s|{{ACCOUNT_ID}}|$ACCOUNT_ID|g; s|{{S3_BUCKET_NAME}}|$S3_BUCKET_NAME|g" \
-  iam/lambda-execution-policy.json.tpl > /tmp/lambda-policy.json
+    iam/lambda-execution-policy.json.tpl > /tmp/lambda-policy.json
+check_error "Substituting placeholders in policy file"
 
 echo "Attaching policy to role..."
 aws iam put-role-policy \
@@ -47,7 +56,8 @@ aws iam put-role-policy \
     --policy-name lambda-inline-policy \
     --policy-document file:///tmp/lambda-policy.json \
     --region "$REGION"
+check_error "Attaching policy to IAM role"
 
 ROLE_ARN=$(aws iam get-role --role-name "$LAMBDA_ROLE_NAME" --query 'Role.Arn' --output text)
-echo "ROLE_ARN=$ROLE_ARN"
-# echo "ROLE_ARN=$ROLE_ARN" >> $GITHUB_ENV
+check_error "Retrieving IAM role ARN"
+echo "ROLE_ARN=$ROLE_ARN" >> $GITHUB_ENV
