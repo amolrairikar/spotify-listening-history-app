@@ -64,6 +64,9 @@ jobs:
       - name: Run integration_tests
         run: ./pipeline_scripts/run_integration_tests.sh
 
+      - name: List files in the src/lambdas directory
+        run: ls -la src/lambdas
+
       - name: Upload Lambda zip as artifact
         uses: actions/upload-artifact@v4
         with:
