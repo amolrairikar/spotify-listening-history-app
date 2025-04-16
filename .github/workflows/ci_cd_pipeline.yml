@@ -89,6 +89,9 @@ jobs:
         with:
           name: lambda-zip
 
+      - name: List files in the root directory
+        run: ls -la
+
       - name: Move zip to root for deployment script
         run: mv lambda-zip/lambda_function.zip .
 
