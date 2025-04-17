@@ -12,7 +12,7 @@ FUNCTION_NAME="spotify-listening-history-lambda"
 ZIP_FILE="lambda_function.zip"
 REGION="us-east-2"
 RUNTIME="python3.12"
-MEMORY_SIZE=512  # in MB
+MEMORY_SIZE=512
 HANDLER="get_recently_played.lambda_handler"
 ROLE_ARN="${ROLE_ARN}"
 
