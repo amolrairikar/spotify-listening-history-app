@@ -28,8 +28,8 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" >
 
     # Wait for AWS to finish updating the code before updating config
     aws lambda wait function-updated \
-        --function-name spotify-listening-history-lambda \
-        --region us-east-2
+        --function-name "$FUNCTION_NAME" \
+        --region "$REGION"
     check_error "Waiting for Lambda function update"
 
     echo "Updating Lambda function environment variables..."
