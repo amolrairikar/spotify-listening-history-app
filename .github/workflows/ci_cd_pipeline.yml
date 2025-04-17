@@ -82,6 +82,8 @@ jobs:
     env:
       ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

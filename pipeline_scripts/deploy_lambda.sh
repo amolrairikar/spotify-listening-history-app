@@ -15,6 +15,7 @@ RUNTIME="python3.12"
 MEMORY_SIZE=512
 HANDLER="get_recently_played.lambda_handler"
 ROLE_ARN="${ROLE_ARN}"
+ENV_VARS="Variables={\"CLIENT_ID\":\"$CLIENT_ID\",\"CLIENT_SECRET\":\"$CLIENT_SECRET\",\"S3_BUCKET_NAME\":\"$S3_BUCKET_NAME\"}"
 
 echo "Deploying Lambda function: $FUNCTION_NAME"
 
@@ -35,7 +36,7 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" >
     echo "Updating Lambda function environment variables..."
     aws lambda update-function-configuration \
         --function-name "$FUNCTION_NAME" \
-        --environment Variables={$ENV_VARS} \
+        --environment "$ENV_VARS" \
         --memory-size "$MEMORY_SIZE" \
         --region "$REGION"
     check_error "Updating Lambda function environment variables"
@@ -49,7 +50,7 @@ else
         --zip-file fileb://"$ZIP_FILE" \
         --region "$REGION" \
         --memory-size "$MEMORY_SIZE" \
-        --environment Variables={$ENV_VARS} \
-        --tags environment=prod,project=spotifyListeningHistoryApp
+        --environment "$ENV_VARS" \
+        --tags "environment=prod,project=spotifyListeningHistoryApp"
     check_error "Creating new Lambda function"
 fi

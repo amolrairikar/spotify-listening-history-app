@@ -130,7 +130,6 @@ def create_lambda_function(context: Any, function_name: str, source_path: str):
         MemorySize=128,
         Environment={
             'Variables': {
-                'REFRESH_TOKEN': os.environ['REFRESH_TOKEN'],
                 'CLIENT_ID': os.environ['CLIENT_ID'],
                 'CLIENT_SECRET': os.environ['CLIENT_SECRET'],
                 'S3_BUCKET_NAME': os.environ['S3_BUCKET_NAME']
