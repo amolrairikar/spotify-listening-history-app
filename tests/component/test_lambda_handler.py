@@ -53,12 +53,12 @@ class TestLambdaHandler(unittest.TestCase):
         """Tests the happy path of the lambda_handler function."""
         ssm = boto3.client('ssm', region_name='us-east-2')
         ssm.put_parameter(
-            Name='refresh_token',
+            Name='spotify_refresh_token',
             Value='dummy_token',
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='last_refresh_timestamp',
+            Name='spotify_last_refresh_timestamp',
             Value='1234567890000',
             Type='String'
         )
@@ -111,12 +111,12 @@ class TestLambdaHandler(unittest.TestCase):
         """Tests the lambda handler function when refreshing the access token fails."""
         ssm = boto3.client('ssm', region_name='us-east-2')
         ssm.put_parameter(
-            Name='refresh_token',
+            Name='spotify_refresh_token',
             Value='dummy_token',
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='last_refresh_timestamp',
+            Name='spotify_last_refresh_timestamp',
             Value='1234567890000',
             Type='String'
         )
@@ -139,17 +139,17 @@ class TestLambdaHandler(unittest.TestCase):
         """Tests the lambda handler function if no access token is returned from the Spotify API."""
         ssm = boto3.client('ssm', region_name='us-east-2')
         ssm.put_parameter(
-            Name='refresh_token',
+            Name='spotify_refresh_token',
             Value='dummy_token',
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='last_refresh_timestamp',
+            Name='spotify_last_refresh_timestamp',
             Value='1234567890000',
             Type='String'
         )
         mock_request_access_token.return_value = MagicMock(
-            json=lambda: {'access_token': None, 'refresh_token': 'new-refresh-token'}
+            json=lambda: {'access_token': None, 'spotify_refresh_token': 'new-refresh-token'}
         )
 
         response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
@@ -168,17 +168,17 @@ class TestLambdaHandler(unittest.TestCase):
         """Tests the lambda handler function if an empty string access token is returned from the Spotify API."""
         ssm = boto3.client('ssm', region_name='us-east-2')
         ssm.put_parameter(
-            Name='refresh_token',
+            Name='spotify_refresh_token',
             Value='dummy_token',
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='last_refresh_timestamp',
+            Name='spotify_last_refresh_timestamp',
             Value='1234567890000',
             Type='String'
         )
         mock_request_access_token.return_value = MagicMock(
-            json=lambda: {'access_token': '', 'refresh_token': 'new-refresh-token'}
+            json=lambda: {'access_token': '', 'spotify_refresh_token': 'new-refresh-token'}
         )
 
         response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
@@ -198,12 +198,12 @@ class TestLambdaHandler(unittest.TestCase):
         """Tests the lambda handler function if an error occurs while fetching recently played tracks."""
         ssm = boto3.client('ssm', region_name='us-east-2')
         ssm.put_parameter(
-            Name='refresh_token',
+            Name='spotify_refresh_token',
             Value='dummy_token',
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='last_refresh_timestamp',
+            Name='spotify_last_refresh_timestamp',
             Value='1234567890000',
             Type='String'
         )
@@ -212,7 +212,7 @@ class TestLambdaHandler(unittest.TestCase):
         response_mock.raise_for_status.side_effect = requests.exceptions.HTTPError()
         mock_requests_get.return_value = response_mock
         mock_request_access_token.return_value = MagicMock(
-            json=lambda: {'access_token': 'test-access-token', 'refresh_token': 'new-refresh-token'}
+            json=lambda: {'access_token': 'test-access-token', 'spotify_refresh_token': 'new-refresh-token'}
         )
         headers = {
             'Authorization': f'Bearer {'test-access-token'}'
@@ -239,12 +239,12 @@ class TestLambdaHandler(unittest.TestCase):
         """Tests the lambda handler function if an error occurs while writing to S3."""
         ssm = boto3.client('ssm', region_name='us-east-2')
         ssm.put_parameter(
-            Name='refresh_token',
+            Name='spotify_refresh_token',
             Value='dummy_token',
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='last_refresh_timestamp',
+            Name='spotify_last_refresh_timestamp',
             Value='1234567890000',
             Type='String'
         )
@@ -253,7 +253,7 @@ class TestLambdaHandler(unittest.TestCase):
             raise_for_status=lambda: None
         )
         mock_request_access_token.return_value = MagicMock(
-            json=lambda: {'access_token': 'test-access-token', 'refresh_token': 'new-refresh-token'}
+            json=lambda: {'access_token': 'test-access-token', 'spotify_refresh_token': 'new-refresh-token'}
         )
         headers = {
             'Authorization': f'Bearer {'test-access-token'}'
@@ -289,7 +289,7 @@ class TestLambdaHandler(unittest.TestCase):
     @patch('src.lambdas.get_recently_played.ParameterStoreClient')
     @patch('src.lambdas.get_recently_played.requests')
     @patch('src.lambdas.get_recently_played.request_access_token')
-    def test_update_refresh_token_fail(
+    def test_update_spotify_refresh_token_fail(
         self,
         mock_request_access_token,
         mock_requests,
@@ -325,10 +325,10 @@ class TestLambdaHandler(unittest.TestCase):
 
             self.assertEqual(response['statusCode'], 500)
             mock_instance.get_parameter.assert_any_call(
-                parameter_name='refresh_token'
+                parameter_name='spotify_refresh_token'
             )
             mock_instance.get_parameter.assert_any_call(
-                parameter_name='last_refresh_timestamp'
+                parameter_name='spotify_last_refresh_timestamp'
             )
             mock_request_access_token.assert_called_once_with(
                 authorization_type='refresh_auth_token',
@@ -339,7 +339,7 @@ class TestLambdaHandler(unittest.TestCase):
                 headers=headers
             )
             mock_instance.create_or_update_parameter.assert_any_call(
-                parameter_name='refresh_token',
+                parameter_name='spotify_refresh_token',
                 parameter_value='new-refresh-token',
                 parameter_type='SecureString',
                 overwrite=True,
@@ -353,7 +353,7 @@ class TestLambdaHandler(unittest.TestCase):
     @patch('src.lambdas.get_recently_played.ParameterStoreClient')
     @patch('src.lambdas.get_recently_played.requests')
     @patch('src.lambdas.get_recently_played.request_access_token')
-    def test_no_refresh_token_returned(
+    def test_no_spotify_refresh_token_returned(
         self,
         mock_request_access_token,
         mock_requests,
@@ -391,10 +391,10 @@ class TestLambdaHandler(unittest.TestCase):
 
             self.assertEqual(response['statusCode'], 500)
             mock_instance.get_parameter.assert_any_call(
-                parameter_name='refresh_token'
+                parameter_name='spotify_refresh_token'
             )
             mock_instance.get_parameter.assert_any_call(
-                parameter_name='last_refresh_timestamp'
+                parameter_name='spotify_last_refresh_timestamp'
             )
             mock_request_access_token.assert_called_once_with(
                 authorization_type='refresh_auth_token',
@@ -405,7 +405,7 @@ class TestLambdaHandler(unittest.TestCase):
                 headers=headers
             )
             mock_instance.create_or_update_parameter.assert_any_call(
-                parameter_name='last_refresh_timestamp',
+                parameter_name='spotify_last_refresh_timestamp',
                 parameter_value='1700000000123',
                 parameter_type='String',
                 overwrite=True,
@@ -421,12 +421,12 @@ class TestLambdaHandler(unittest.TestCase):
         """Tests the lambda handler function if no tracks are returned from the Spotify API."""
         ssm = boto3.client('ssm', region_name='us-east-2')
         ssm.put_parameter(
-            Name='refresh_token',
+            Name='spotify_refresh_token',
             Value='dummy_token',
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='last_refresh_timestamp',
+            Name='spotify_last_refresh_timestamp',
             Value='1234567890000',
             Type='String'
         )
@@ -435,7 +435,7 @@ class TestLambdaHandler(unittest.TestCase):
             raise_for_status=lambda: None
         )
         mock_request_access_token.return_value = MagicMock(
-            json=lambda: {'access_token': 'test-access-token', 'refresh_token': 'new-refresh-token'}
+            json=lambda: {'access_token': 'test-access-token', 'spotify_refresh_token': 'new-refresh-token'}
         )
         headers = {
             'Authorization': f'Bearer {'test-access-token'}'
