@@ -8,4 +8,4 @@ Feature: Lambda Integration Tests
         When we trigger the lambda function
         Then the lambda function should complete with status code 200
         And the S3 bucket test-bucket should have an output file
-        And the SSM parameter last_refresh_timestamp should have been updated
+        And the SSM parameter spotify_last_refresh_timestamp should have been updated
