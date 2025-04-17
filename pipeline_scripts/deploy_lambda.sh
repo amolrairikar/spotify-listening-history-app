@@ -26,6 +26,12 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" >
         --region "$REGION"
     check_error "Updating Lambda function code"
 
+    # Wait for AWS to finish updating the code before updating config
+    aws lambda wait function-updated \
+        --function-name "$FUNCTION_NAME" \
+        --region "$REGION"
+    check_error "Waiting for Lambda function update"
+
     echo "Updating Lambda function environment variables..."
     aws lambda update-function-configuration \
         --function-name "$FUNCTION_NAME" \
