@@ -50,5 +50,6 @@ else
         --region "$REGION" \
         --memory-size "$MEMORY_SIZE" \
         --environment Variables={$ENV_VARS}
+        --tags environment=prod,project=spotifyListeningHistoryApp
     check_error "Creating new Lambda function"
 fi
