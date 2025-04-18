@@ -58,7 +58,7 @@ class TestLambdaHandler(unittest.TestCase):
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='spotify_last_refresh_timestamp',
+            Name='spotify_last_fetched_time',
             Value='1234567890000',
             Type='String'
         )
@@ -116,7 +116,7 @@ class TestLambdaHandler(unittest.TestCase):
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='spotify_last_refresh_timestamp',
+            Name='spotify_last_fetched_time',
             Value='1234567890000',
             Type='String'
         )
@@ -144,7 +144,7 @@ class TestLambdaHandler(unittest.TestCase):
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='spotify_last_refresh_timestamp',
+            Name='spotify_last_fetched_time',
             Value='1234567890000',
             Type='String'
         )
@@ -173,7 +173,7 @@ class TestLambdaHandler(unittest.TestCase):
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='spotify_last_refresh_timestamp',
+            Name='spotify_last_fetched_time',
             Value='1234567890000',
             Type='String'
         )
@@ -203,7 +203,7 @@ class TestLambdaHandler(unittest.TestCase):
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='spotify_last_refresh_timestamp',
+            Name='spotify_last_fetched_time',
             Value='1234567890000',
             Type='String'
         )
@@ -244,7 +244,7 @@ class TestLambdaHandler(unittest.TestCase):
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='spotify_last_refresh_timestamp',
+            Name='spotify_last_fetched_time',
             Value='1234567890000',
             Type='String'
         )
@@ -328,7 +328,7 @@ class TestLambdaHandler(unittest.TestCase):
                 parameter_name='spotify_refresh_token'
             )
             mock_instance.get_parameter.assert_any_call(
-                parameter_name='spotify_last_refresh_timestamp'
+                parameter_name='spotify_last_fetched_time'
             )
             mock_request_access_token.assert_called_once_with(
                 authorization_type='refresh_auth_token',
@@ -394,7 +394,7 @@ class TestLambdaHandler(unittest.TestCase):
                 parameter_name='spotify_refresh_token'
             )
             mock_instance.get_parameter.assert_any_call(
-                parameter_name='spotify_last_refresh_timestamp'
+                parameter_name='spotify_last_fetched_time'
             )
             mock_request_access_token.assert_called_once_with(
                 authorization_type='refresh_auth_token',
@@ -405,7 +405,7 @@ class TestLambdaHandler(unittest.TestCase):
                 headers=headers
             )
             mock_instance.create_or_update_parameter.assert_any_call(
-                parameter_name='spotify_last_refresh_timestamp',
+                parameter_name='spotify_last_fetched_time',
                 parameter_value='1700000000123',
                 parameter_type='String',
                 overwrite=True,
@@ -426,7 +426,7 @@ class TestLambdaHandler(unittest.TestCase):
             Type='SecureString'
         )
         ssm.put_parameter(
-            Name='spotify_last_refresh_timestamp',
+            Name='spotify_last_fetched_time',
             Value='1234567890000',
             Type='String'
         )
