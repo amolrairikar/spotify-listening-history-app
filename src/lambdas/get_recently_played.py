@@ -256,7 +256,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         refresh_token = parameter_store_client.get_parameter(parameter_name='spotify_refresh_token')
         # logger.debug(f'Refresh token: {refresh_token}')
         logger.info('Successfully retrieved refresh token from Parameter Store')
-        last_refresh_timestamp = parameter_store_client.get_parameter(parameter_name='spotify_last_refresh_timestamp')
+        last_refresh_timestamp = parameter_store_client.get_parameter(parameter_name='spotify_last_fetched_time')
         logger.debug(f'Last refresh timestamp: {last_refresh_timestamp}')
         logger.info('Successfully retrieved last refresh timestamp from Parameter Store')
     except botocore.exceptions.ClientError as e:
@@ -349,7 +349,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 logger.info('No new refresh token provided')
             last_refresh_timestamp = get_current_unix_timestamp_milliseconds()
             parameter_store_client.create_or_update_parameter(
-                parameter_name='spotify_last_refresh_timestamp',
+                parameter_name='spotify_last_fetched_time',
                 parameter_value=last_refresh_timestamp,
                 parameter_type='String',
                 overwrite=True,
