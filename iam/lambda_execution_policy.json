@@ -28,6 +28,19 @@
           "logs:PutLogEvents"
         ],
         "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "scheduler.amazonaws.com"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Resource": "arn:aws:lambda:us-east-2:{{ACCOUNT_ID}}:function:spotify-listening-history-lambda",
+        "Condition": {
+          "ArnLike": {
+            "aws:SourceArn": "arn:aws:scheduler:us-east-2:{{ACCOUNT_ID}}:schedule/default/spotifyListeningHistoryApp-prod-lambda-trigger"
+          }
+        }
       }
     ]
   }
