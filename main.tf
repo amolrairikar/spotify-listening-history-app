@@ -24,7 +24,7 @@ data "aws_iam_policy_document" "eventbridge_trust_relationship_policy" {
     effect  = "Allow"
     principals {
       type        = "Service"
-      identifiers = "scheduler.amazonaws.com"
+      identifiers = ["scheduler.amazonaws.com"]
     }
   }
 }
