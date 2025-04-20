@@ -13,5 +13,5 @@ echo "Planning Terraform configuration..."
 terraform plan -out=tfplan
 
 # Apply the Terraform configuration
-# echo "Applying Terraform configuration..."
+echo "Applying Terraform configuration..."
 # terraform apply -auto-approve tfplan

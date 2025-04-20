@@ -85,7 +85,7 @@ jobs:
       TF_VAR_infra_role_arn: ${{ secrets.TF_VAR_infra_role_arn }}
       TF_VAR_environment: "prod"
       TF_VAR_account_number: ${{ secrets.AWS_ACCOUNT_ID }}
-      TF_VAR_lambda_arn: ${{ secrets.TF_VAR_INFRA_ROLE_ARN }}
+      TF_VAR_lambda_arn: ${{ secrets.TF_VAR_LAMBDA_ARN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
