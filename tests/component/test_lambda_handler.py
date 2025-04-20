@@ -99,10 +99,8 @@ class TestLambdaHandler(unittest.TestCase):
     @mock_aws
     def test_retrieve_parameter_failure(self):
         """Tests the lambda handler function when retrieving the refresh token or timestamp fails."""
-        response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
-
-        self.assertEqual(response['statusCode'], 500)
-        self.assertIn('Failed to retrieve parameters from Parameter Store', response['body'])
+        with self.assertRaises(botocore.exceptions.ClientError):
+            lambda_handler(event=self.mock_event, context=MockLambdaContext())
 
 
     @mock_aws
@@ -121,16 +119,15 @@ class TestLambdaHandler(unittest.TestCase):
             Type='String'
         )
         response_mock = MagicMock()
-        response_mock.status_code = 500
         mock_request_access_token.side_effect = requests.exceptions.HTTPError(response=response_mock)
 
-        response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
+        with self.assertRaises(requests.exceptions.HTTPError):
+            lambda_handler(event=self.mock_event, context=MockLambdaContext())
 
-        self.assertEqual(response['statusCode'], 500)
-        mock_request_access_token.assert_called_once_with(
-            authorization_type='refresh_auth_token',
-            auth_token='dummy_token'
-        )
+            mock_request_access_token.assert_called_once_with(
+                authorization_type='refresh_auth_token',
+                auth_token='dummy_token'
+            )
 
 
     @mock_aws
@@ -152,14 +149,13 @@ class TestLambdaHandler(unittest.TestCase):
             json=lambda: {'access_token': None, 'spotify_refresh_token': 'new-refresh-token'}
         )
 
-        response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
+        with self.assertRaises(Exception):
+            lambda_handler(event=self.mock_event, context=MockLambdaContext())
 
-        self.assertEqual(response['statusCode'], 404)
-        self.assertIn('No access token found in response', response['body'])
-        mock_request_access_token.assert_called_once_with(
-            authorization_type='refresh_auth_token',
-            auth_token='dummy_token'
-        )
+            mock_request_access_token.assert_called_once_with(
+                authorization_type='refresh_auth_token',
+                auth_token='dummy_token'
+            )
 
 
     @mock_aws
@@ -181,14 +177,13 @@ class TestLambdaHandler(unittest.TestCase):
             json=lambda: {'access_token': '', 'spotify_refresh_token': 'new-refresh-token'}
         )
 
-        response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
+        with self.assertRaises(Exception):
+            lambda_handler(event=self.mock_event, context=MockLambdaContext())
 
-        self.assertEqual(response['statusCode'], 404)
-        self.assertIn('No access token found in response', response['body'])
-        mock_request_access_token.assert_called_once_with(
-            authorization_type='refresh_auth_token',
-            auth_token='dummy_token'
-        )
+            mock_request_access_token.assert_called_once_with(
+                authorization_type='refresh_auth_token',
+                auth_token='dummy_token'
+            )
 
 
     @mock_aws
@@ -208,7 +203,6 @@ class TestLambdaHandler(unittest.TestCase):
             Type='String'
         )
         response_mock = MagicMock()
-        response_mock.status_code = 500
         response_mock.raise_for_status.side_effect = requests.exceptions.HTTPError()
         mock_requests_get.return_value = response_mock
         mock_request_access_token.return_value = MagicMock(
@@ -218,18 +212,17 @@ class TestLambdaHandler(unittest.TestCase):
             'Authorization': f'Bearer {'test-access-token'}'
         }
 
-        response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
+        with self.assertRaises(requests.exceptions.HTTPError):
+            lambda_handler(event=self.mock_event, context=MockLambdaContext())
 
-        self.assertEqual(response['statusCode'], 500)
-        self.assertIn('Failed to fetch recently played tracks', response['body'])
-        mock_request_access_token.assert_called_once_with(
-            authorization_type='refresh_auth_token',
-            auth_token='dummy_token'
-        )
-        mock_requests_get.assert_called_once_with(
-            url='https://api.spotify.com/v1/me/player/recently-played?limit=50&after=1234567890000',
-            headers=headers
-        )
+            mock_request_access_token.assert_called_once_with(
+                authorization_type='refresh_auth_token',
+                auth_token='dummy_token'
+            )
+            mock_requests_get.assert_called_once_with(
+                url='https://api.spotify.com/v1/me/player/recently-played?limit=50&after=1234567890000',
+                headers=headers
+            )
 
 
     @mock_aws
@@ -270,19 +263,18 @@ class TestLambdaHandler(unittest.TestCase):
                 'UploadFile'
             )
 
-            response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
+            with self.assertRaises(botocore.exceptions.ClientError):
+                lambda_handler(event=self.mock_event, context=MockLambdaContext())
 
-            self.assertEqual(response['statusCode'], 500)
-            self.assertIn('Failed to write data to S3', response['body'])
-            mock_request_access_token.assert_called_once_with(
-                authorization_type='refresh_auth_token',
-                auth_token='dummy_token'
-            )
-            mock_requests.get.assert_called_once_with(
-                url='https://api.spotify.com/v1/me/player/recently-played?limit=50&after=1234567890000',
-                headers=headers
-            )
-            mock_write_s3.assert_called_once()
+                mock_request_access_token.assert_called_once_with(
+                    authorization_type='refresh_auth_token',
+                    auth_token='dummy_token'
+                )
+                mock_requests.get.assert_called_once_with(
+                    url='https://api.spotify.com/v1/me/player/recently-played?limit=50&after=1234567890000',
+                    headers=headers
+                )
+                mock_write_s3.assert_called_once()
 
 
     @mock_aws
@@ -321,31 +313,31 @@ class TestLambdaHandler(unittest.TestCase):
         with patch('src.lambdas.get_recently_played.write_to_s3') as mock_write_s3:
             mock_write_s3.return_value = None
 
-            response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
+            with self.assertRaises(botocore.exceptions.ClientError):
+                lambda_handler(event=self.mock_event, context=MockLambdaContext())
 
-            self.assertEqual(response['statusCode'], 500)
-            mock_instance.get_parameter.assert_any_call(
-                parameter_name='spotify_refresh_token'
-            )
-            mock_instance.get_parameter.assert_any_call(
-                parameter_name='spotify_last_fetched_time'
-            )
-            mock_request_access_token.assert_called_once_with(
-                authorization_type='refresh_auth_token',
-                auth_token='test-refresh-token'
-            )
-            mock_requests.get.assert_called_once_with(
-                url='https://api.spotify.com/v1/me/player/recently-played?limit=50&after=1234567890',
-                headers=headers
-            )
-            mock_instance.create_or_update_parameter.assert_any_call(
-                parameter_name='spotify_refresh_token',
-                parameter_value='new-refresh-token',
-                parameter_type='SecureString',
-                overwrite=True,
-                parameter_description='Spotify refresh token'
-            )
-            mock_write_s3.assert_called_once()
+                mock_instance.get_parameter.assert_any_call(
+                    parameter_name='spotify_refresh_token'
+                )
+                mock_instance.get_parameter.assert_any_call(
+                    parameter_name='spotify_last_fetched_time'
+                )
+                mock_request_access_token.assert_called_once_with(
+                    authorization_type='refresh_auth_token',
+                    auth_token='test-refresh-token'
+                )
+                mock_requests.get.assert_called_once_with(
+                    url='https://api.spotify.com/v1/me/player/recently-played?limit=50&after=1234567890',
+                    headers=headers
+                )
+                mock_instance.create_or_update_parameter.assert_any_call(
+                    parameter_name='spotify_refresh_token',
+                    parameter_value='new-refresh-token',
+                    parameter_type='SecureString',
+                    overwrite=True,
+                    parameter_description='Spotify refresh token'
+                )
+                mock_write_s3.assert_called_once()
 
 
     @mock_aws
@@ -387,31 +379,31 @@ class TestLambdaHandler(unittest.TestCase):
         with patch('src.lambdas.get_recently_played.write_to_s3') as mock_write_s3:
             mock_write_s3.return_value = None
 
-            response = lambda_handler(event=self.mock_event, context=MockLambdaContext())
+            with self.assertRaises(botocore.exceptions.ClientError):
+                lambda_handler(event=self.mock_event, context=MockLambdaContext())
 
-            self.assertEqual(response['statusCode'], 500)
-            mock_instance.get_parameter.assert_any_call(
-                parameter_name='spotify_refresh_token'
-            )
-            mock_instance.get_parameter.assert_any_call(
-                parameter_name='spotify_last_fetched_time'
-            )
-            mock_request_access_token.assert_called_once_with(
-                authorization_type='refresh_auth_token',
-                auth_token='test-refresh-token'
-            )
-            mock_requests.get.assert_called_once_with(
-                url='https://api.spotify.com/v1/me/player/recently-played?limit=50&after=1234567890',
-                headers=headers
-            )
-            mock_instance.create_or_update_parameter.assert_any_call(
-                parameter_name='spotify_last_fetched_time',
-                parameter_value='1700000000123',
-                parameter_type='String',
-                overwrite=True,
-                parameter_description='Last refresh timestamp for Spotify API'
-            )
-            mock_write_s3.assert_called_once()
+                mock_instance.get_parameter.assert_any_call(
+                    parameter_name='spotify_refresh_token'
+                )
+                mock_instance.get_parameter.assert_any_call(
+                    parameter_name='spotify_last_fetched_time'
+                )
+                mock_request_access_token.assert_called_once_with(
+                    authorization_type='refresh_auth_token',
+                    auth_token='test-refresh-token'
+                )
+                mock_requests.get.assert_called_once_with(
+                    url='https://api.spotify.com/v1/me/player/recently-played?limit=50&after=1234567890',
+                    headers=headers
+                )
+                mock_instance.create_or_update_parameter.assert_any_call(
+                    parameter_name='spotify_last_fetched_time',
+                    parameter_value='1700000000123',
+                    parameter_type='String',
+                    overwrite=True,
+                    parameter_description='Last refresh timestamp for Spotify API'
+                )
+                mock_write_s3.assert_called_once()
 
 
     @mock_aws

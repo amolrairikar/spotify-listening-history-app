@@ -45,7 +45,7 @@ def is_localstack_running(localstack_health_url: str):
             logger.info('LocalStack is running and all services are available.')
             return True
     except requests.RequestException as e:
-        logger.error(f'Error checking LocalStack status, assuming LocalStack is not running')
+        logger.warning(f'LocalStack health endpoint not found')
         pass
     return False
 
@@ -260,12 +260,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.debug(f'Last refresh timestamp: {last_refresh_timestamp}')
         logger.info('Successfully retrieved last refresh timestamp from Parameter Store')
     except botocore.exceptions.ClientError as e:
-        error_message = f'Failed to retrieve parameters from Parameter Store: {str(e)}'
-        logger.error(error_message)
-        return {
-            'statusCode': 500,
-            'body': error_message
-        }
+        logger.error(f'Failed to retrieve parameters from Parameter Store: {str(e)}')
+        raise e
 
     # Refresh access token using refresh token
     try:
@@ -278,18 +274,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not access_token or access_token == '':
             error_message = 'No access token found in response.'
             logger.error(error_message)
-            return {
-                'statusCode': 404,
-                'body': error_message
-            }
+            raise Exception(error_message)
         logger.info('Successfully refreshed access token')
     except requests.exceptions.HTTPError as e:
-        error_message = f'Failed to refresh access token: {str(e)}'
-        logger.error(error_message)
-        return {
-            'statusCode': 500,
-            'body': error_message
-        }
+        logger.error(f'Failed to refresh access token: {str(e)}')
+        raise e
 
     # Use access token to make API request
     recently_played_url = f'https://api.spotify.com/v1/me/player/recently-played?limit=50&after={last_refresh_timestamp}'
@@ -304,12 +293,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         recently_played_data = response.json()
         logger.info('Successfully fetched recently played tracks')
     except requests.exceptions.HTTPError as e:
-        error_message = f'Failed to fetch recently played tracks: {str(e)}'
-        logger.error(error_message)
-        return {
-            'statusCode': 500,
-            'body': error_message
-        }
+        logger.error(f'Failed to fetch recently played tracks: {str(e)}')
+        raise e
 
     # Check if any tracks were returned since the last refresh timestamp
     if recently_played_data.get('items', []):
@@ -327,12 +312,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
             logger.info('Successfully wrote data to S3')
         except botocore.exceptions.ClientError as e:
-            error_message = f'Failed to write data to S3: {str(e)}'
-            logger.error(error_message)
-            return {
-                'statusCode': 500,
-                'body': error_message
-            }
+            logger.error(f'Failed to write data to S3: {str(e)}')
+            raise e
 
         # Update refresh token and last refresh timestamp in Parameter Store
         try:
@@ -361,12 +342,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': 'Execution successful'
             }
         except botocore.exceptions.ClientError as e:
-            error_message = f'Failed to update parameters in Parameter Store: {str(e)}'
-            logger.error(error_message)
-            return {
-                'statusCode': 500,
-                'body': error_message
-            }
+            logger.error(f'Failed to update parameters in Parameter Store: {str(e)}')
+            raise e
     else:
         logger_message = 'No recently played tracks found.'
         logger.info(logger_message)
