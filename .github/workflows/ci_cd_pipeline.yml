@@ -73,17 +73,19 @@ jobs:
           name: lambda-zip
           path: src/lambdas/lambda_function.zip
 
-  deploy_lambda:
+  deploy_infrastructure:
 
     runs-on: ubuntu-latest
     needs: integration_tests
-    # Only deploy lambda function if the event is a push to the main branch
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
-      ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      S3_STATE_BUCKET_NAME: ${{ secrets.S3_STATE_BUCKET_NAME }}
       S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
       CLIENT_ID: ${{ secrets.CLIENT_ID }}
       CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      TF_VAR_infra_role_arn: ${{ secrets.TF_VAR_infra_role_arn }}
+      TF_VAR_environment: "prod"
+      TF_VAR_account_number: ${{ secrets.AWS_ACCOUNT_ID }}
+      TF_VAR_lambda_arn: ${{ secrets.TF_VAR_LAMBDA_ARN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -103,13 +105,25 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: 'us-east-2'
 
-      - name: Make the deployment scripts executable
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Initialize Terraform
         run: |
-          chmod +x pipeline_scripts/deploy_lambda.sh
-          chmod +x pipeline_scripts/setup_lambda_execution_role.sh
+          echo "Initializing Terraform..."
+          terraform init \
+            -backend-config="bucket=${S3_STATE_BUCKET_NAME}" \
+            -backend-config="key=spotify-listening-history-app/terraform.tfstate" \
+            -backend-config="region=us-east-2" \
+            -backend-config="assume_role={role_arn=\"${TF_VAR_infra_role_arn}\", session_name=\"terraform-session\"}"
 
-      - name: Set up Lambda execution role
-        run: ./pipeline_scripts/setup_lambda_execution_role.sh
+      - name: Plan Terraform
+        run: |
+          echo "Planning Terraform configuration..."
+          terraform plan -out=tfplan
 
-      - name: Deploy lambda function
-        run: ./pipeline_scripts/deploy_lambda.sh
+      - name: Apply Terraform
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "Applying Terraform configuration..."
+          terraform apply -auto-approve tfplan
