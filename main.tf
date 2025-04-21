@@ -15,7 +15,7 @@ module "spotify_project_data_bucket" {
   bucket_prefix  = "spotify-listening-history-app-data-lake"
   account_number = var.account_number
   environment    = var.environment
-  project        = "spotifyListeningHistoryApp"
+  project        = var.project_name
 }
 
 data "aws_iam_policy_document" "eventbridge_trust_relationship_policy" {
@@ -34,22 +34,14 @@ module "eventbridge_role" {
   role_name                 = "eventbridge-role"
   trust_relationship_policy = data.aws_iam_policy_document.eventbridge_trust_relationship_policy.json
   environment               = var.environment
-  project                   = "spotifyListeningHistoryApp"
-}
-
-output "eventbridge_role_name" {
-  value = module.eventbridge_role.role_name
-}
-
-output "eventbridge_role_arn" {
-  value = module.eventbridge_role.role_arn
+  project                   = var.project_name
 }
 
 data "aws_iam_policy_document" "eventbridge_role_policy_document" {
   statement {
-    effect = "Allow"
-    actions = ["lambda:InvokeFunction"]
-    resources = [var.lambda_arn]
+    effect    = "Allow"
+    actions   = ["lambda:InvokeFunction"]
+    resources = [module.spotify_lambda.lambda_arn]
   }
 }
 
@@ -67,7 +59,56 @@ resource "aws_iam_role_policy_attachment" "eventbridge_role_policy_attachment" {
 module "eventbridge_scheduler" {
   source               = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/eventbridge-scheduler?ref=main"
   eventbridge_role_arn = module.eventbridge_role.role_arn
-  lambda_arn           = var.lambda_arn
-  environment          = "prod"
-  project              = "spotifyListeningHistoryApp"
+  lambda_arn           = module.spotify_lambda.lambda_arn
+  environment          = var.environment
+  project              = var.project_name
+}
+
+data "aws_iam_policy_document" "lambda_execution_role_policy_document" {
+  statement {
+    effect    = "Allow"
+    actions = [
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:PutParameter"
+    ]
+    resources = [
+        "arn:aws:ssm:us-east-2:${var.account_number}:parameter/spotify_refresh_token",
+        "arn:aws:ssm:us-east-2:${var.account_number}:parameter/spotify_last_fetched_time"
+    ]
+  }
+  statement {
+    effect    = "Allow"
+    actions = [
+      "s3:PutObject"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.datalake_bucket_name}/*"
+    ]
+  }
+  statement {
+    effect    = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+    resources = [
+      "*"
+    ]
+  }
+}
+
+module "spotify_lambda" {
+  source = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
+  environment = var.environment
+  project = var.project_name
+  lambda_name = "spotify-listening-history-lambda"
+  lambda_description = "Lambda function to fetch recently played tracks from Spotify API"
+  lambda_filename = "lambda_function.zip"
+  lambda_handler = "get_recently_played.lambda_handler"
+  lambda_memory_size = "256"
+  lambda_runtime = "python3.12"
+  lambda_execution_role_policy = data.aws_iam_policy_document.lambda_execution_role_policy_document.json
+  sns_topic_arn = "fill-in-later"
 }
