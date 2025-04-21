@@ -41,7 +41,7 @@ module "eventbridge_role" {
   source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
   role_name                 = "eventbridge-role"
   trust_relationship_policy = data.aws_iam_policy_document.eventbridge_trust_relationship_policy.json
-  inline_policy             = data.eventbridge_role_inline_policy_document.json
+  inline_policy             = data.aws_iam_policy_document.eventbridge_role_inline_policy_document.json
   inline_policy_description = "Policy for EventBridge Scheduler to invoke Lambda functions"
   environment               = var.environment
   project                   = var.project_name
@@ -105,7 +105,7 @@ module "lambda_role" {
   source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
   role_name                 = "spotify-listening-history-lambda-execution-role"
   trust_relationship_policy = data.aws_iam_policy_document.lambda_trust_relationship_policy.json
-  inline_policy             = data.lambda_execution_role_inline_policy_document.json
+  inline_policy             = data.aws_iam_policy_document.lambda_execution_role_inline_policy_document.json
   inline_policy_description = "Inline policy for Spotify Lambda function execution role"
   environment               = var.environment
   project                   = var.project_name
