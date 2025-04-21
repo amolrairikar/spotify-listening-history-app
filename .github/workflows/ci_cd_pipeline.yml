@@ -84,6 +84,7 @@ jobs:
       CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
       TF_VAR_infra_role_arn: ${{ secrets.TF_VAR_infra_role_arn }}
       TF_VAR_account_number: ${{ secrets.AWS_ACCOUNT_ID }}
+      TF_VAR_email: ${{ secrets.EMAIL }}
       TF_VAR_environment: "prod"
       TF_VAR_project_name: "spotifyListeningHistoryApp"
       TF_VAR_datalake_bucket_name: ${{ secrets.S3_BUCKET_NAME }}

@@ -8,6 +8,11 @@ variable "account_number" {
   type        = string
 }
 
+variable "email" {
+  description = "Developer email to send notifications to"
+  type        = string
+}
+
 variable "environment" {
   description = "The deployment environment (QA or PROD)"
   type        = string

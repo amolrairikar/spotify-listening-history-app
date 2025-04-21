@@ -64,6 +64,25 @@ module "eventbridge_scheduler" {
   project              = var.project_name
 }
 
+data "aws_iam_policy_document" "lambda_trust_relationship_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    effect  = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+module "lambda_role" {
+  source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
+  role_name                 = "spotify-listening-history-lambda-execution-role"
+  trust_relationship_policy = data.aws_iam_policy_document.lambda_trust_relationship_policy.json
+  environment               = var.environment
+  project                   = var.project_name
+}
+
 data "aws_iam_policy_document" "lambda_execution_role_policy_document" {
   statement {
     effect    = "Allow"
@@ -99,16 +118,35 @@ data "aws_iam_policy_document" "lambda_execution_role_policy_document" {
   }
 }
 
+resource "aws_iam_policy" "lambda_role_policy" {
+  name        = "${module.lambda_role.role_name}-inline-policy"
+  description = "IAM policy for Spotify Lambda function role"
+  policy      = data.aws_iam_policy_document.eventbridge_role_policy_document.json
+}
+
+resource "aws_iam_role_policy_attachment" "eventbridge_role_policy_attachment" {
+  role       = module.lambda_role.role_name
+  policy_arn = aws_iam_policy.lambda_role_policy.arn
+}
+
 module "spotify_lambda" {
-  source = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
-  environment = var.environment
-  project = var.project_name
-  lambda_name = "spotify-listening-history-lambda"
-  lambda_description = "Lambda function to fetch recently played tracks from Spotify API"
-  lambda_filename = "lambda_function.zip"
-  lambda_handler = "get_recently_played.lambda_handler"
-  lambda_memory_size = "256"
-  lambda_runtime = "python3.12"
-  lambda_execution_role_policy = data.aws_iam_policy_document.lambda_execution_role_policy_document.json
-  sns_topic_arn = "fill-in-later"
+  source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
+  environment               = var.environment
+  project                   = var.project_name
+  lambda_name               = "spotify-listening-history-lambda"
+  lambda_description        = "Lambda function to fetch recently played tracks from Spotify API"
+  lambda_filename           = "lambda_function.zip"
+  lambda_handler            = "get_recently_played.lambda_handler"
+  lambda_memory_size        = "256"
+  lambda_runtime            = "python3.12"
+  lambda_execution_role_arn = module.lambda_role.role_arn
+  sns_topic_arn             = module.sns_email_subscription.topic_arn
+}
+
+module "sns_email_subscription" {
+  source         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/sns-email-subscription?ref=main"
+  sns_topic_name = "lambda-failure-notification-topic"
+  user_email     = var.email
+  environment    = var.environment
+  project        = var.project_name
 }
