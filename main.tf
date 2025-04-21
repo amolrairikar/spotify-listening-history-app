@@ -121,7 +121,7 @@ data "aws_iam_policy_document" "lambda_execution_role_policy_document" {
 resource "aws_iam_policy" "lambda_role_policy" {
   name        = "${module.lambda_role.role_name}-inline-policy"
   description = "IAM policy for Spotify Lambda function role"
-  policy      = data.aws_iam_policy_document.eventbridge_role_policy_document.json
+  policy      = data.aws_iam_policy_document.lambda_execution_role_policy_document.json
 }
 
 resource "aws_iam_role_policy_attachment" "eventbridge_role_policy_attachment" {
