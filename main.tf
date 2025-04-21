@@ -37,14 +37,6 @@ module "eventbridge_role" {
   project                   = var.project_name
 }
 
-output "eventbridge_role_name" {
-  value = module.eventbridge_role.role_name
-}
-
-output "eventbridge_role_arn" {
-  value = module.eventbridge_role.role_arn
-}
-
 data "aws_iam_policy_document" "eventbridge_role_policy_document" {
   statement {
     effect    = "Allow"
