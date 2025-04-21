@@ -29,15 +29,7 @@ data "aws_iam_policy_document" "eventbridge_trust_relationship_policy" {
   }
 }
 
-module "eventbridge_role" {
-  source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
-  role_name                 = "eventbridge-role"
-  trust_relationship_policy = data.aws_iam_policy_document.eventbridge_trust_relationship_policy.json
-  environment               = var.environment
-  project                   = var.project_name
-}
-
-data "aws_iam_policy_document" "eventbridge_role_policy_document" {
+data "aws_iam_policy_document" "eventbridge_role_inline_policy_document" {
   statement {
     effect    = "Allow"
     actions   = ["lambda:InvokeFunction"]
@@ -45,15 +37,14 @@ data "aws_iam_policy_document" "eventbridge_role_policy_document" {
   }
 }
 
-resource "aws_iam_policy" "eventbridge_role_policy" {
-  name        = "eventbridge-scheduler-trigger-lambda"
-  description = "IAM policy allowing EventBridge scheduler to trigger Lambda functions"
-  policy      = data.aws_iam_policy_document.eventbridge_role_policy_document.json
-}
-
-resource "aws_iam_role_policy_attachment" "eventbridge_role_policy_attachment" {
-  role       = module.eventbridge_role.role_name
-  policy_arn = aws_iam_policy.eventbridge_role_policy.arn
+module "eventbridge_role" {
+  source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
+  role_name                 = "eventbridge-role"
+  trust_relationship_policy = data.aws_iam_policy_document.eventbridge_trust_relationship_policy.json
+  inline_policy             = data.eventbridge_role_inline_policy_document.json
+  inline_policy_description = "Policy for EventBridge Scheduler to invoke Lambda functions"
+  environment               = var.environment
+  project                   = var.project_name
 }
 
 module "eventbridge_scheduler" {
@@ -75,15 +66,7 @@ data "aws_iam_policy_document" "lambda_trust_relationship_policy" {
   }
 }
 
-module "lambda_role" {
-  source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
-  role_name                 = "spotify-listening-history-lambda-execution-role"
-  trust_relationship_policy = data.aws_iam_policy_document.lambda_trust_relationship_policy.json
-  environment               = var.environment
-  project                   = var.project_name
-}
-
-data "aws_iam_policy_document" "lambda_execution_role_policy_document" {
+data "aws_iam_policy_document" "lambda_execution_role_inline_policy_document" {
   statement {
     effect    = "Allow"
     actions = [
@@ -118,15 +101,14 @@ data "aws_iam_policy_document" "lambda_execution_role_policy_document" {
   }
 }
 
-resource "aws_iam_policy" "lambda_role_policy" {
-  name        = "${module.lambda_role.role_name}-inline-policy"
-  description = "IAM policy for Spotify Lambda function role"
-  policy      = data.aws_iam_policy_document.lambda_execution_role_policy_document.json
-}
-
-resource "aws_iam_role_policy_attachment" "eventbridge_role_policy_attachment" {
-  role       = module.lambda_role.role_name
-  policy_arn = aws_iam_policy.lambda_role_policy.arn
+module "lambda_role" {
+  source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
+  role_name                 = "spotify-listening-history-lambda-execution-role"
+  trust_relationship_policy = data.aws_iam_policy_document.lambda_trust_relationship_policy.json
+  inline_policy             = data.lambda_execution_role_inline_policy_document.json
+  inline_policy_description = "Inline policy for Spotify Lambda function execution role"
+  environment               = var.environment
+  project                   = var.project_name
 }
 
 module "spotify_lambda" {
