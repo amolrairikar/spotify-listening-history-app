@@ -91,6 +91,15 @@ data "aws_iam_policy_document" "lambda_execution_role_inline_policy_document" {
   statement {
     effect    = "Allow"
     actions = [
+      "sns:Publish"
+    ]
+    resources = [
+      module.sns_email_subscription.topic_arn
+    ]
+  }
+  statement {
+    effect    = "Allow"
+    actions = [
       "logs:CreateLogGroup",
       "logs:CreateLogStream",
       "logs:PutLogEvents"
