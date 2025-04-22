@@ -121,17 +121,22 @@ module "lambda_role" {
 }
 
 module "spotify_lambda" {
-  source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
-  environment               = var.environment
-  project                   = var.project_name
-  lambda_name               = "spotify-listening-history-lambda"
-  lambda_description        = "Lambda function to fetch recently played tracks from Spotify API"
-  lambda_filename           = "lambda_function.zip"
-  lambda_handler            = "get_recently_played.lambda_handler"
-  lambda_memory_size        = "256"
-  lambda_runtime            = "python3.12"
-  lambda_execution_role_arn = module.lambda_role.role_arn
-  sns_topic_arn             = module.sns_email_subscription.topic_arn
+  source                         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
+  environment                    = var.environment
+  project                        = var.project_name
+  lambda_name                    = "spotify-listening-history-lambda"
+  lambda_description             = "Lambda function to fetch recently played tracks from Spotify API"
+  lambda_filename                = "lambda_function.zip"
+  lambda_handler                 = "get_recently_played.lambda_handler"
+  lambda_memory_size             = "256"
+  lambda_runtime                 = "python3.12"
+  lambda_execution_role_arn      = module.lambda_role.role_arn
+  sns_topic_arn                  = module.sns_email_subscription.topic_arn
+    lambda_environment_variables = {
+      CLIENT_ID      = var.spotify_client_id
+      CLIENT_SECRET  = var.spotify_client_secret
+      S3_BUCKET_NAME = var.datalake_bucket_name
+  }
 }
 
 module "sns_email_subscription" {
