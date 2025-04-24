@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 import botocore
 import botocore.exceptions
 
-from src.lambdas.get_recently_played import ParameterStoreClient
+from src.lambdas.get_recently_played.get_recently_played import ParameterStoreClient
 
 class TestParameterStoreClient(unittest.TestCase):
     """Class for testing methods in ParameterStoreClient class."""

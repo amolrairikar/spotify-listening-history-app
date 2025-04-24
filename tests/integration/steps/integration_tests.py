@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 import boto3
 import botocore
 
-from src.lambdas.get_recently_played import lambda_handler
+from src.lambdas.get_recently_played.get_recently_played import lambda_handler
 
 # Load environment variables
 load_dotenv()
@@ -52,7 +52,7 @@ def wait_for_lambda_ready(function_name: str, lambda_client: boto3.client, timeo
             else:
                 print(f'Waiting for Lambda to be Active (current: {status})...')
         except botocore.exceptions.ClientError as e:
-            print(f"⚠️ Still waiting... {str(e)}")
+            print(f"Still waiting... {str(e)}")
         time.sleep(10)
 
     raise TimeoutError(f'Lambda "{function_name}" did not become ready in {timeout_seconds} seconds.')

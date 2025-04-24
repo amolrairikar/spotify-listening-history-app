@@ -7,7 +7,7 @@ import json
 import requests
 import botocore
 
-from src.lambdas.get_recently_played import (
+from src.lambdas.get_recently_played.get_recently_played import (
     encode_string,
     request_access_token,
     is_retryable_exception,
@@ -20,7 +20,7 @@ from src.lambdas.get_recently_played import (
 class TestIsLocalstackRunning(unittest.TestCase):
     """Class for testing is_localstack_running method."""
 
-    @patch('src.lambdas.get_recently_played.requests.get')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests.get')
     def test_localstack_running(self, mock_get):
         """Tests the method returns True when Localstack is running."""
         mock_response = MagicMock()
@@ -33,7 +33,7 @@ class TestIsLocalstackRunning(unittest.TestCase):
         self.assertTrue(result)
         mock_get.assert_called_once_with('http://localhost:4566/_localstack/health')
 
-    @patch('src.lambdas.get_recently_played.requests.get')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests.get')
     def test_localstack_running(self, mock_get):
         """Tests the method returns False when Localstack is running."""
         mock_get.side_effect = requests.RequestException('Connection error')
@@ -123,7 +123,7 @@ class TestRequestAccessToken(unittest.TestCase):
         """Stop all patches after each test."""
         self.env_patcher.stop()
 
-    @patch('src.lambdas.get_recently_played.requests.post')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests.post')
     def test_initial_auth_success(self, mock_post):
         """Test request_access_token for 'initial_auth' authorization type."""
         mock_response = MagicMock()
@@ -151,7 +151,7 @@ class TestRequestAccessToken(unittest.TestCase):
         self.assertEqual(result, mock_response)
 
 
-    @patch('src.lambdas.get_recently_played.requests.post')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests.post')
     def test_refresh_auth_token_success(self, mock_post):
         """Test request_access_token for 'refresh_auth_token' authorization type."""
         mock_response = MagicMock()
@@ -191,7 +191,7 @@ class TestRequestAccessToken(unittest.TestCase):
         )
 
 
-    @patch('src.lambdas.get_recently_played.requests.post')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests.post')
     def test_http_error(self, mock_post):
         """Test request_access_token raises an HTTPError if encountered."""
         response_mock = MagicMock()
@@ -213,7 +213,7 @@ class TestRequestAccessToken(unittest.TestCase):
         self.assertEqual(mock_post.call_count, 1)
 
 
-    @patch('src.lambdas.get_recently_played.requests.post')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests.post')
     def test_retry_http_error(self, mock_post):
         """Test request_access_token retrys a retryable HTTPError if encountered."""
         response_mock = MagicMock()
@@ -238,7 +238,7 @@ class TestRequestAccessToken(unittest.TestCase):
 class TestGetCurrentUnixTimestampMilliseconds(unittest.TestCase):
     """Class for testing get_current_unix_timestamp_milliseconds method."""
 
-    @patch('src.lambdas.get_recently_played.time.time')
+    @patch('src.lambdas.get_recently_played.get_recently_played.time.time')
     def test_mocked_time(self, mock_time):
         """Test the function with a mocked time value."""
         mock_time.return_value = 1700000000.123
@@ -253,7 +253,7 @@ class TestGetCurrentUnixTimestampMilliseconds(unittest.TestCase):
 class TestWriteToS3(unittest.TestCase):
     """Class for testing the write_to_s3 method."""
 
-    @patch('src.lambdas.get_recently_played.boto3.client')
+    @patch('src.lambdas.get_recently_played.get_recently_played.boto3.client')
     def test_write_parquet_to_s3_success(self, mock_boto_client):
         """Test writing a Parquet file to S3."""
         mock_s3_client = MagicMock()

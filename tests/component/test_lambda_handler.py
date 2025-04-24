@@ -8,7 +8,7 @@ import botocore
 import requests
 from moto import mock_aws
 
-from src.lambdas.get_recently_played import lambda_handler
+from src.lambdas.get_recently_played.get_recently_played import lambda_handler
 
 
 class MockLambdaContext:
@@ -47,8 +47,8 @@ class TestLambdaHandler(unittest.TestCase):
 
 
     @mock_aws
-    @patch('src.lambdas.get_recently_played.requests')
-    @patch('src.lambdas.get_recently_played.request_access_token')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests')
+    @patch('src.lambdas.get_recently_played.get_recently_played.request_access_token')
     def test_success(self, mock_request_access_token, mock_requests):
         """Tests the happy path of the lambda_handler function."""
         ssm = boto3.client('ssm', region_name='us-east-2')
@@ -104,7 +104,7 @@ class TestLambdaHandler(unittest.TestCase):
 
 
     @mock_aws
-    @patch('src.lambdas.get_recently_played.request_access_token')
+    @patch('src.lambdas.get_recently_played.get_recently_played.request_access_token')
     def test_refresh_access_token_failure(self, mock_request_access_token):
         """Tests the lambda handler function when refreshing the access token fails."""
         ssm = boto3.client('ssm', region_name='us-east-2')
@@ -131,7 +131,7 @@ class TestLambdaHandler(unittest.TestCase):
 
 
     @mock_aws
-    @patch('src.lambdas.get_recently_played.request_access_token')
+    @patch('src.lambdas.get_recently_played.get_recently_played.request_access_token')
     def test_no_access_token_returned(self, mock_request_access_token):
         """Tests the lambda handler function if no access token is returned from the Spotify API."""
         ssm = boto3.client('ssm', region_name='us-east-2')
@@ -159,7 +159,7 @@ class TestLambdaHandler(unittest.TestCase):
 
 
     @mock_aws
-    @patch('src.lambdas.get_recently_played.request_access_token')
+    @patch('src.lambdas.get_recently_played.get_recently_played.request_access_token')
     def test_empty_string_access_token_returned(self, mock_request_access_token):
         """Tests the lambda handler function if an empty string access token is returned from the Spotify API."""
         ssm = boto3.client('ssm', region_name='us-east-2')
@@ -187,8 +187,8 @@ class TestLambdaHandler(unittest.TestCase):
 
 
     @mock_aws
-    @patch('src.lambdas.get_recently_played.requests.get')
-    @patch('src.lambdas.get_recently_played.request_access_token')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests.get')
+    @patch('src.lambdas.get_recently_played.get_recently_played.request_access_token')
     def test_fetch_tracks_failure(self, mock_request_access_token, mock_requests_get):
         """Tests the lambda handler function if an error occurs while fetching recently played tracks."""
         ssm = boto3.client('ssm', region_name='us-east-2')
@@ -226,8 +226,8 @@ class TestLambdaHandler(unittest.TestCase):
 
 
     @mock_aws
-    @patch('src.lambdas.get_recently_played.requests')
-    @patch('src.lambdas.get_recently_played.request_access_token')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests')
+    @patch('src.lambdas.get_recently_played.get_recently_played.request_access_token')
     def test_write_to_s3_fail(self, mock_request_access_token, mock_requests):
         """Tests the lambda handler function if an error occurs while writing to S3."""
         ssm = boto3.client('ssm', region_name='us-east-2')
@@ -252,7 +252,7 @@ class TestLambdaHandler(unittest.TestCase):
             'Authorization': f'Bearer {'test-access-token'}'
         }
 
-        with patch('src.lambdas.get_recently_played.write_to_s3') as mock_write_s3:
+        with patch('src.lambdas.get_recently_played.get_recently_played.write_to_s3') as mock_write_s3:
             mock_write_s3.side_effect = botocore.exceptions.ClientError(
                 {
                     'Error':
@@ -278,9 +278,9 @@ class TestLambdaHandler(unittest.TestCase):
 
 
     @mock_aws
-    @patch('src.lambdas.get_recently_played.ParameterStoreClient')
-    @patch('src.lambdas.get_recently_played.requests')
-    @patch('src.lambdas.get_recently_played.request_access_token')
+    @patch('src.lambdas.get_recently_played.get_recently_played.ParameterStoreClient')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests')
+    @patch('src.lambdas.get_recently_played.get_recently_played.request_access_token')
     def test_update_spotify_refresh_token_fail(
         self,
         mock_request_access_token,
@@ -310,7 +310,7 @@ class TestLambdaHandler(unittest.TestCase):
             'Authorization': f'Bearer {'test-access-token'}'
         }
 
-        with patch('src.lambdas.get_recently_played.write_to_s3') as mock_write_s3:
+        with patch('src.lambdas.get_recently_played.get_recently_played.write_to_s3') as mock_write_s3:
             mock_write_s3.return_value = None
 
             with self.assertRaises(botocore.exceptions.ClientError):
@@ -341,10 +341,10 @@ class TestLambdaHandler(unittest.TestCase):
 
 
     @mock_aws
-    @patch('src.lambdas.get_recently_played.get_current_unix_timestamp_milliseconds')
-    @patch('src.lambdas.get_recently_played.ParameterStoreClient')
-    @patch('src.lambdas.get_recently_played.requests')
-    @patch('src.lambdas.get_recently_played.request_access_token')
+    @patch('src.lambdas.get_recently_played.get_recently_played.get_current_unix_timestamp_milliseconds')
+    @patch('src.lambdas.get_recently_played.get_recently_played.ParameterStoreClient')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests')
+    @patch('src.lambdas.get_recently_played.get_recently_played.request_access_token')
     def test_no_spotify_refresh_token_returned(
         self,
         mock_request_access_token,
@@ -376,7 +376,7 @@ class TestLambdaHandler(unittest.TestCase):
         }
         mock_unix_timestamp.return_value = '1700000000123'
 
-        with patch('src.lambdas.get_recently_played.write_to_s3') as mock_write_s3:
+        with patch('src.lambdas.get_recently_played.get_recently_played.write_to_s3') as mock_write_s3:
             mock_write_s3.return_value = None
 
             with self.assertRaises(botocore.exceptions.ClientError):
@@ -407,8 +407,8 @@ class TestLambdaHandler(unittest.TestCase):
 
 
     @mock_aws
-    @patch('src.lambdas.get_recently_played.requests')
-    @patch('src.lambdas.get_recently_played.request_access_token')
+    @patch('src.lambdas.get_recently_played.get_recently_played.requests')
+    @patch('src.lambdas.get_recently_played.get_recently_played.request_access_token')
     def test_no_tracks_returned(self, mock_request_access_token, mock_requests):
         """Tests the lambda handler function if no tracks are returned from the Spotify API."""
         ssm = boto3.client('ssm', region_name='us-east-2')
