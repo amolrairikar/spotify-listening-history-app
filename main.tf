@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "eventbridge_role_inline_policy_document" {
   statement {
     effect    = "Allow"
     actions   = ["lambda:InvokeFunction"]
-    resources = [module.spotify_lambda.lambda_arn]
+    resources = [module.spotify_get_recently_played_lambda.lambda_arn]
   }
 }
 
@@ -50,7 +50,7 @@ module "eventbridge_role" {
 module "eventbridge_scheduler" {
   source               = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/eventbridge-scheduler?ref=main"
   eventbridge_role_arn = module.eventbridge_role.role_arn
-  lambda_arn           = module.spotify_lambda.lambda_arn
+  lambda_arn           = module.spotify_get_recently_played_lambda.lambda_arn
   environment          = var.environment
   project              = var.project_name
 }
@@ -130,7 +130,7 @@ module "spotify_get_recently_played_lambda" {
   lambda_handler                 = "get_recently_played.lambda_handler"
   lambda_memory_size             = "256"
   lambda_runtime                 = "python3.12"
-  lambda_execution_role_arn      = module.lambda_role.role_arn
+  lambda_execution_role_arn      = module.lambda_get_recently_played_role.role_arn
   sns_topic_arn                  = module.sns_email_subscription.topic_arn
     lambda_environment_variables = {
       CLIENT_ID      = var.spotify_client_id
