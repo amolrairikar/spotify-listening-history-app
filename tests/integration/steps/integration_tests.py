@@ -75,13 +75,13 @@ def create_s3_bucket(context: Any, bucket_name: str):
     assert response is not None
 
 
-@given('a lambda function named {function_name} from source path {source_path}')
-def create_lambda_function(context: Any, function_name: str, source_path: str):
+@given('a lambda function named {function_name} with handler file {handler_filename} from source path {source_path}')
+def create_lambda_function(context: Any, function_name: str, handler_filename: str, source_path: str):
     """Create a Lambda function on LocalStack."""
     # Set up paths for zipping
     project_dir = pathlib.Path(source_path).resolve()
     requirements_path = project_dir / 'requirements.txt'
-    handler_path = project_dir / 'get_recently_played.py'
+    handler_path = project_dir / handler_filename
     build_dir = project_dir / 'build'
     zip_path = project_dir / f'{function_name}.zip'
 
