@@ -66,7 +66,7 @@ data "aws_iam_policy_document" "lambda_trust_relationship_policy" {
   }
 }
 
-data "aws_iam_policy_document" "lambda_execution_role_inline_policy_document" {
+data "aws_iam_policy_document" "lambda_get_recently_played_execution_role_inline_policy_document" {
   statement {
     effect    = "Allow"
     actions = [
@@ -110,17 +110,17 @@ data "aws_iam_policy_document" "lambda_execution_role_inline_policy_document" {
   }
 }
 
-module "lambda_role" {
+module "lambda_get_recently_played_role" {
   source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
-  role_name                 = "spotify-listening-history-lambda-execution-role"
+  role_name                 = "spotify-listening-history-lambda-get-recently-played-execution-role"
   trust_relationship_policy = data.aws_iam_policy_document.lambda_trust_relationship_policy.json
-  inline_policy             = data.aws_iam_policy_document.lambda_execution_role_inline_policy_document.json
+  inline_policy             = data.aws_iam_policy_document.lambda_get_recently_played_execution_role_inline_policy_document.json
   inline_policy_description = "Inline policy for Spotify Lambda function execution role"
   environment               = var.environment
   project                   = var.project_name
 }
 
-module "spotify_lambda" {
+module "spotify_get_recently_played_lambda" {
   source                         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
   environment                    = var.environment
   project                        = var.project_name
