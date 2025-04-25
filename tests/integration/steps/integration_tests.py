@@ -83,7 +83,7 @@ def create_lambda_function(context: Any, function_name: str, source_path: str):
     requirements_path = project_dir / 'requirements.txt'
     handler_path = project_dir / 'get_recently_played.py'
     build_dir = project_dir / 'build'
-    zip_path = project_dir / 'lambda_function.zip'
+    zip_path = project_dir / f'{function_name}.zip'
 
     # Clean build directory
     if build_dir.exists():

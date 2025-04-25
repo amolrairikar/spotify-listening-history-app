@@ -85,7 +85,7 @@ data "aws_iam_policy_document" "lambda_get_recently_played_execution_role_inline
       "s3:PutObject"
     ]
     resources = [
-      "arn:aws:s3:::${var.datalake_bucket_name}/*"
+      "arn:aws:s3:::${var.datalake_bucket_name}/raw/*"
     ]
   }
   statement {
@@ -126,7 +126,7 @@ module "spotify_get_recently_played_lambda" {
   project                        = var.project_name
   lambda_name                    = "spotify-listening-history-lambda"
   lambda_description             = "Lambda function to fetch recently played tracks from Spotify API"
-  lambda_filename                = "lambda_function.zip"
+  lambda_filename                = "get_recently_played.zip"
   lambda_handler                 = "get_recently_played.lambda_handler"
   lambda_memory_size             = "256"
   lambda_runtime                 = "python3.12"
@@ -145,4 +145,96 @@ module "sns_email_subscription" {
   user_email     = var.email
   environment    = var.environment
   project        = var.project_name
+}
+
+module "s3_trigger_lambda_etl" {
+  source               = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/s3-lambda-trigger?ref=main"
+  bucket_name          = module.spotify_project_data_bucket.bucket_id
+  bucket_arn           = module.spotify_project_data_bucket.bucket_arn
+  lambda_function_name = "spotify-listening-history-lambda"
+  lambda_function_arn  = module.spotify_etl_lambda.lambda_arn
+  filter_prefix        = "raw/"
+  filter_suffix        = ".json"
+}
+
+data "aws_iam_policy_document" "lambda_etl_execution_role_inline_policy_document" {
+  statement {
+    effect    = "Allow"
+    actions = [
+      "s3:PutObject"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.datalake_bucket_name}/processed/*"
+    ]
+  }
+  statement {
+    effect    = "Allow"
+    actions = [
+      "s3:GetObject"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.datalake_bucket_name}/raw/*"
+    ]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = [
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.datalake_bucket_name}"
+    ]
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["raw/*", "processed/*"]
+    }
+  }
+  statement {
+    effect    = "Allow"
+    actions = [
+      "sns:Publish"
+    ]
+    resources = [
+      module.sns_email_subscription.topic_arn
+    ]
+  }
+  statement {
+    effect    = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+    resources = [
+      "*"
+    ]
+  }
+}
+
+module "lambda_etl_role" {
+  source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
+  role_name                 = "spotify-lambda-etl-execution-role"
+  trust_relationship_policy = data.aws_iam_policy_document.lambda_trust_relationship_policy.json
+  inline_policy             = data.aws_iam_policy_document.lambda_etl_execution_role_inline_policy_document.json
+  inline_policy_description = "Inline policy for Spotify Lambda ETL function execution role"
+  environment               = var.environment
+  project                   = var.project_name
+}
+
+module "spotify_etl_lambda" {
+  source                         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
+  environment                    = var.environment
+  project                        = var.project_name
+  lambda_name                    = "spotify-etl-lambda"
+  lambda_description             = "Lambda function to perform ETL on Spotify API recently played tracks response raw JSON"
+  lambda_filename                = "perform_etl.zip"
+  lambda_handler                 = "perform_etl.lambda_handler"
+  lambda_memory_size             = "256"
+  lambda_runtime                 = "python3.12"
+  lambda_execution_role_arn      = module.lambda_get_recently_played_role.role_arn
+  sns_topic_arn                  = module.sns_email_subscription.topic_arn
+    lambda_environment_variables = {
+      S3_BUCKET_NAME = var.datalake_bucket_name
+  }
 }
