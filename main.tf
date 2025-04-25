@@ -112,7 +112,7 @@ data "aws_iam_policy_document" "lambda_get_recently_played_execution_role_inline
 
 module "lambda_get_recently_played_role" {
   source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
-  role_name                 = "spotify-listening-history-lambda-get-recently-played-execution-role"
+  role_name                 = "spotify-lambda-get-recently-played-execution-role"
   trust_relationship_policy = data.aws_iam_policy_document.lambda_trust_relationship_policy.json
   inline_policy             = data.aws_iam_policy_document.lambda_get_recently_played_execution_role_inline_policy_document.json
   inline_policy_description = "Inline policy for Spotify Lambda function execution role"
