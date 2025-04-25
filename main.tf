@@ -151,7 +151,7 @@ module "s3_trigger_lambda_etl" {
   source               = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/s3-lambda-trigger?ref=main"
   bucket_name          = module.spotify_project_data_bucket.bucket_id
   bucket_arn           = module.spotify_project_data_bucket.bucket_arn
-  lambda_function_name = "spotify-listening-history-lambda"
+  lambda_function_name = "spotify-etl-lambda"
   lambda_function_arn  = module.spotify_etl_lambda.lambda_arn
   events               = ["s3:ObjectCreated:*"]
   filter_prefix        = "raw/"
