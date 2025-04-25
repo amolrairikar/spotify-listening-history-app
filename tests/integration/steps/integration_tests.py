@@ -111,7 +111,7 @@ def create_lambda_function(context: Any, function_name: str, handler_filename: s
                 full_path = pathlib.Path(root) / file
                 rel_path = full_path.relative_to(site_packages_dir)
                 zipf.write(full_path, rel_path)
-        zipf.write(build_dir / 'get_recently_played.py', 'get_recently_played.py')
+        zipf.write(build_dir / handler_filename, handler_filename)
 
     # Create Lambda function in LocalStack
     lambda_client = create_localstack_client(service_name='lambda')
@@ -124,7 +124,7 @@ def create_lambda_function(context: Any, function_name: str, handler_filename: s
         FunctionName=function_name,
         Runtime='python3.12',
         Role='arn:aws:iam::000000000000:role/lambda-role',  # Dummy role for LocalStack
-        Handler='get_recently_played.lambda_handler',
+        Handler=f'{handler_filename.split('.')[0]}.lambda_handler',
         Code={'ZipFile': zipped_code},
         Timeout=10,
         MemorySize=128,
