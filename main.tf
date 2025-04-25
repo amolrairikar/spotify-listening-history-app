@@ -52,7 +52,7 @@ module "eventbridge_scheduler" {
   eventbridge_role_arn = module.eventbridge_role.role_arn
   lambda_arn           = module.spotify_get_recently_played_lambda.lambda_arn
   schedule_frequency   = "rate (15 minutes)"
-  schedule_timezeone   = "America/Chicago"
+  schedule_timezone   = "America/Chicago"
   schedule_state       = "ENABLED"
   environment          = var.environment
   project              = var.project_name
