@@ -22,7 +22,7 @@ load_dotenv()
 
 # Set up logger
 # TODO: convert the logging level into an environment variable
-logger = logging.getLogger('spotify-listening-history-app')
+logger = logging.getLogger('spotify-listening-history-app-ingest')
 logger.setLevel(logging.INFO)
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
@@ -37,7 +37,7 @@ def is_localstack_running(localstack_health_url: str):
         response = requests.get(localstack_health_url)
         if response.status_code == 200:
             data = response.json()
-            logger.debug(f'LocalStack health check response: {data}')
+            logger.info(f'LocalStack health check response: {data}')
             for service, status in data.get('services', {}).items():
                 if status not in ('available', 'running'):
                     logger.warning(f'LocalStack service {service} is not available.')
@@ -214,7 +214,6 @@ def request_access_token(authorization_type: str, auth_token: str) -> Dict[str, 
     encoded_key = encode_string(
         input_string=f'{os.environ["CLIENT_ID"]}:{os.environ["CLIENT_SECRET"]}'
     )
-    # logger.debug(f'Encoded key: {encoded_key}')
     headers = {
         'Authorization': 'Basic ' + encoded_key,
         'content-type': 'application/x-www-form-urlencoded'
@@ -234,8 +233,6 @@ def request_access_token(authorization_type: str, auth_token: str) -> Dict[str, 
         }
     else:
         raise ValueError('Invalid authorization type. Must be "initial_auth" or "refresh_auth_token".')
-    # logger.debug(f'Request data: {data}')
-    # logger.debug(f'Request headers: {headers}')
     response = requests.post(token_url, data=data, headers=headers)
     response.raise_for_status()
     return response
@@ -254,10 +251,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         parameter_store_client = ParameterStoreClient(region='us-east-2')  # TODO: Try to avoid hardcoding region
         refresh_token = parameter_store_client.get_parameter(parameter_name='spotify_refresh_token')
-        # logger.debug(f'Refresh token: {refresh_token}')
         logger.info('Successfully retrieved refresh token from Parameter Store')
         last_refresh_timestamp = parameter_store_client.get_parameter(parameter_name='spotify_last_fetched_time')
-        logger.debug(f'Last refresh timestamp: {last_refresh_timestamp}')
+        logger.info(f'Last refresh timestamp: {last_refresh_timestamp}')
         logger.info('Successfully retrieved last refresh timestamp from Parameter Store')
     except botocore.exceptions.ClientError as e:
         logger.error(f'Failed to retrieve parameters from Parameter Store: {str(e)}')
@@ -285,8 +281,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     headers = {
         'Authorization': f'Bearer {access_token}'
     }
-    logger.debug(f'Recently played URL: {recently_played_url}')
-    # logger.debug(f'Request header: {headers}')
+    logger.info(f'Making request to URL: {recently_played_url}')
     try:
         response = requests.get(url=recently_played_url, headers=headers)
         response.raise_for_status()

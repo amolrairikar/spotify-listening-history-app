@@ -75,15 +75,15 @@ def create_s3_bucket(context: Any, bucket_name: str):
     assert response is not None
 
 
-@given('a lambda function named {function_name} from source path {source_path}')
-def create_lambda_function(context: Any, function_name: str, source_path: str):
+@given('a lambda function named {function_name} with handler file {handler_filename} from source path {source_path}')
+def create_lambda_function(context: Any, function_name: str, handler_filename: str, source_path: str):
     """Create a Lambda function on LocalStack."""
     # Set up paths for zipping
     project_dir = pathlib.Path(source_path).resolve()
     requirements_path = project_dir / 'requirements.txt'
-    handler_path = project_dir / 'get_recently_played.py'
+    handler_path = project_dir / handler_filename
     build_dir = project_dir / 'build'
-    zip_path = project_dir / 'lambda_function.zip'
+    zip_path = project_dir / f'{function_name}.zip'
 
     # Clean build directory
     if build_dir.exists():
@@ -111,7 +111,7 @@ def create_lambda_function(context: Any, function_name: str, source_path: str):
                 full_path = pathlib.Path(root) / file
                 rel_path = full_path.relative_to(site_packages_dir)
                 zipf.write(full_path, rel_path)
-        zipf.write(build_dir / 'get_recently_played.py', 'get_recently_played.py')
+        zipf.write(build_dir / handler_filename, handler_filename)
 
     # Create Lambda function in LocalStack
     lambda_client = create_localstack_client(service_name='lambda')
@@ -124,7 +124,7 @@ def create_lambda_function(context: Any, function_name: str, source_path: str):
         FunctionName=function_name,
         Runtime='python3.12',
         Role='arn:aws:iam::000000000000:role/lambda-role',  # Dummy role for LocalStack
-        Handler='get_recently_played.lambda_handler',
+        Handler=f'{handler_filename.split('.')[0]}.lambda_handler',
         Code={'ZipFile': zipped_code},
         Timeout=10,
         MemorySize=128,

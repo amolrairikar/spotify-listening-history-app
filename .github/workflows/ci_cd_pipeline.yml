@@ -67,14 +67,23 @@ jobs:
       - name: Run integration_tests
         run: ./pipeline_scripts/run_integration_tests.sh
 
-      - name: List files in the src/lambdas directory
+      - name: List files in the src/lambdas/get_recently_played directory
         run: ls -la src/lambdas/get_recently_played
 
       - name: Upload Lambda zip as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: lambda-zip
-          path: src/lambdas/get_recently_played/lambda_function.zip
+          name: fetch-recently-played-lambda-zip
+          path: src/lambdas/get_recently_played/get_recently_played.zip
+
+      - name: List files in the src/lambdas/etl_process directory
+        run: ls -la src/lambdas/etl_process
+
+      - name: Upload Lambda zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: etl-lambda-zip
+          path: src/lambdas/etl_process/perform_etl.zip
 
   deploy_infrastructure:
 
@@ -97,10 +106,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download Lambda zip artifact
+      - name: Download Lambda fetch recently played zip artifact
         uses: actions/download-artifact@v4
         with:
-          name: lambda-zip
+          name: fetch-recently-played-lambda-zip
+
+      - name: Download Lambda ETL zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: etl-lambda-zip
 
       - name: List files in the root directory
         run: ls -la
