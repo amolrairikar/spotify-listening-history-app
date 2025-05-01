@@ -174,4 +174,5 @@ cython_debug/
 .pypirc
 
 # Lambda function .zip file
-lambda_function.zip
+perform_etl.zip
+get_recently_played.zip

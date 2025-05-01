@@ -84,11 +84,11 @@ def backoff_on_client_error(func):
         @backoff.on_exception(
             backoff.expo,
             (botocore.exceptions.ClientError, requests.exceptions.HTTPError),
-            max_tries=5,
+            max_tries=3,
             giveup=lambda e: not is_retryable_exception(e),
-            on_success=lambda details: print(f"Success after {details['tries']} tries"),
-            on_giveup=lambda details: print(f"Giving up after {details['tries']} tries"),
-            on_backoff=lambda details: print(f"Backing off after {details['tries']} tries due to {details['exception']}")
+            on_success=lambda details: logger.info(f"Success after {details['tries']} tries"),
+            on_giveup=lambda details: logger.info(f"Giving up after {details['tries']} tries"),
+            on_backoff=lambda details: logger.info(f"Backing off after {details['tries']} tries due to {details['exception']}")
         )
         def retryable_call(*args, **kwargs):
             if instance_or_class:
