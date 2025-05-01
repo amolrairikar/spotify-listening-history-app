@@ -1,4 +1,4 @@
-"""Module for component testing of the lambda handler function."""
+"""Module for component testing of the get recently played lambda handler function."""
 import unittest
 from unittest.mock import patch, MagicMock
 import os

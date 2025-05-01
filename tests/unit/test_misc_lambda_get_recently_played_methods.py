@@ -1,4 +1,4 @@
-"""Module for testing one-off utility functions in the Lambda function."""
+"""Module for testing utility functions in the get recently played tracks Lambda function."""
 import unittest
 from unittest.mock import patch, MagicMock
 import os
@@ -51,14 +51,14 @@ class TestIsRetryableException(unittest.TestCase):
         """Test a retryable botocore ClientError with InternalServerError."""
         error_response = {'Error': {'Code': 'InternalServerError'}}
         client_error = botocore.exceptions.ClientError(error_response, 'OperationName')
-        self.assertTrue(is_retryable_exception(client_error))
+        self.assertTrue(is_retryable_exception(e=client_error))
 
 
     def test_non_retryable_aws_error(self):
         """Test a non-retryable botocore ClientError with a different error code."""
         error_response = {'Error': {'Code': 'AccessDenied'}}
         client_error = botocore.exceptions.ClientError(error_response, 'OperationName')
-        self.assertFalse(is_retryable_exception(client_error))
+        self.assertFalse(is_retryable_exception(e=client_error))
 
 
     def test_retryable_http_error(self):
@@ -66,7 +66,7 @@ class TestIsRetryableException(unittest.TestCase):
         response_mock = MagicMock()
         response_mock.status_code = 429
         http_error = requests.exceptions.HTTPError(response=response_mock)
-        self.assertTrue(is_retryable_exception(http_error))
+        self.assertTrue(is_retryable_exception(e=http_error))
 
 
     def test_non_retryable_http_error(self):
@@ -74,12 +74,12 @@ class TestIsRetryableException(unittest.TestCase):
         response_mock = MagicMock()
         response_mock.status_code = 404
         http_error = requests.exceptions.HTTPError(response=response_mock)
-        self.assertFalse(is_retryable_exception(http_error))
+        self.assertFalse(is_retryable_exception(e=http_error))
 
     def test_non_retryable_other_exception(self):
         """Test an exception that is neither ClientError nor HTTPError."""
         other_exception = ValueError('Some other exception')
-        self.assertFalse(is_retryable_exception(other_exception))
+        self.assertFalse(is_retryable_exception(e=other_exception))
 
 
 class TestEncodeString(unittest.TestCase):
@@ -232,7 +232,7 @@ class TestRequestAccessToken(unittest.TestCase):
                 auth_token='test_auth_code'
             )
 
-        self.assertEqual(mock_post.call_count, 5)
+        self.assertEqual(mock_post.call_count, 3)
 
 
 class TestGetCurrentUnixTimestampMilliseconds(unittest.TestCase):

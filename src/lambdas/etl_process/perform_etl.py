@@ -1,5 +1,5 @@
 """Module containing ETL code for Lambda function to write processed Spotify listening history data to S3."""
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List
 from functools import wraps
 import logging
 import json
@@ -75,12 +75,12 @@ def backoff_on_client_error(func):
 
         @backoff.on_exception(
             backoff.expo,
-            (botocore.exceptions.ClientError, requests.exceptions.HTTPError),
-            max_tries=5,
+            (botocore.exceptions.ClientError),
+            max_tries=3,
             giveup=lambda e: not is_retryable_exception(e),
-            on_success=lambda details: print(f"Success after {details['tries']} tries"),
-            on_giveup=lambda details: print(f"Giving up after {details['tries']} tries"),
-            on_backoff=lambda details: print(f"Backing off after {details['tries']} tries due to {details['exception']}")
+            on_success=lambda details: logger.info(f"Success after {details['tries']} tries"),
+            on_giveup=lambda details: logger.info(f"Giving up after {details['tries']} tries"),
+            on_backoff=lambda details: logger.info(f"Backing off after {details['tries']} tries due to {details['exception']}")
         )
         def retryable_call(*args, **kwargs):
             if instance_or_class:
@@ -103,6 +103,8 @@ def convert_utc_to_cst(utc_string: str) -> str:
 
 def milliseconds_to_mmss(track_length: int) -> str:
     """Converts a track length in milliseconds to mm:ss length"""
+    if track_length <= 0:
+        raise ValueError('Track length must be greater than 0 seconds')
     total_seconds = track_length / 1000
     minutes = total_seconds // 60
     seconds = total_seconds % 60
@@ -111,15 +113,15 @@ def milliseconds_to_mmss(track_length: int) -> str:
 
 def get_bucket_and_object(event: Dict[str, Any]) -> Tuple[str, str]:
     """Gets the S3 bucket and object from the event payload that triggered the ETL lambda."""
-    event_details = event.get('Records', [])[0]
+    event_details = event.get('Records', [])
     if event_details:
-        bucket = event_details.get('s3', {}).get('bucket', {}).get('name', '')
-        object = event_details.get('s3', {}).get('object', {}).get('key', '')
+        bucket = event_details[0].get('s3', {}).get('bucket', {}).get('name', '')
+        object = event_details[0].get('s3', {}).get('object', {}).get('key', '')
         return bucket, object
     raise Exception('No data present in event payload')
 
 
-def perform_etl(json_data: Dict[str, Any]) -> Dict[str, Any]:
+def perform_etl(json_data: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Performs ETL by selecting fields for analytics from raw Spotify API response."""
     processed_data = {}
     for item in json_data:
@@ -162,14 +164,14 @@ class S3Client:
 
 
     @backoff_on_client_error
-    def read_json_from_s3(self, bucket: str, object: str) -> Dict[str, Any]:
+    def read_json_from_s3(self, bucket: str, object: str) -> List[Dict[str, Any]]:
         """Reads a JSON file corresponding to an object in a bucket."""
         response = self.client.get_object(
             Bucket=bucket,
             Key=object
         )
         logger.info(f'Successfully read file at s3://{bucket}/{object}')
-        return response
+        return json.loads(response['Body'].read().decode('utf-8'))
     
 
     @backoff_on_client_error
@@ -200,8 +202,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     s3_client = S3Client(region='us-east-2')
     response = s3_client.read_json_from_s3(bucket=bucket, object=object)
-    json_data = json.loads(response['Body'].read().decode('utf-8'))
-    processed_data = perform_etl(json_data=json_data)
+    processed_data = perform_etl(json_data=response)
     partitioned_data = partition_spotify_data(track_data=processed_data)
     for (year, month), records in partitioned_data.items():
         file_name = f'tracks_{uuid.uuid4()}.json'

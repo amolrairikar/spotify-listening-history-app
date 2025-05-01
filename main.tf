@@ -236,7 +236,7 @@ module "spotify_etl_lambda" {
   lambda_handler                 = "perform_etl.lambda_handler"
   lambda_memory_size             = "256"
   lambda_runtime                 = "python3.12"
-  lambda_execution_role_arn      = module.lambda_get_recently_played_role.role_arn
+  lambda_execution_role_arn      = module.lambda_etl_role.role_arn
   sns_topic_arn                  = module.sns_email_subscription.topic_arn
     lambda_environment_variables = {
       S3_BUCKET_NAME = var.datalake_bucket_name
