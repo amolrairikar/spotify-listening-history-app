@@ -6,3 +6,5 @@ Streamlit web app to visualize my Spotify listening history. Listening history i
 To replicate this project in your own AWS environment, you will need to create your own AWS account with a Terraform user and a role the Terraform user can assume for provisioning infrastructure. You will also need to create a Spotify [application](https://developer.spotify.com/documentation/web-api/concepts/apps) to run the manual auth flow once using the command `pipenv run python -m src.spotify_auth.auth_flow`.
 
 Any secrets referenced in `.github/workflows/ci_cd_pipeline.yml` should be created as secrets in your own repository.
+
+You can view the example Streamlit web app for my listening history [here](https://spotify-listening-history-app-dxnofv5whhfh6esgsgotg5.streamlit.app/).
