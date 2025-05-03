@@ -11,6 +11,8 @@ uvicorn = "*"
 requests = "*"
 boto3 = "*"
 backoff = "*"
+duckdb = "*"
+altair = "*"
 
 [dev-packages]
 coverage = "*"
