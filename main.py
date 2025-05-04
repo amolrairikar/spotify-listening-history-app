@@ -158,7 +158,7 @@ st.altair_chart(
     use_container_width=True
 )
 st.divider()
-col1, col2 = st.columns(2)
+col1, col2 = st.columns(2, gap='large')
 with col1:
     st.altair_chart(
         alt.Chart(day_of_week_track_distribution).mark_bar(color=spotify_green).encode(
