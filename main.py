@@ -1,5 +1,6 @@
 from typing import Optional
 from decimal import Decimal
+import datetime
 
 import pandas as pd
 import streamlit as st
@@ -37,18 +38,14 @@ def generate_sql_query(year: Optional[str] = None, month: Optional[str] = None) 
             track_popularity,
             played_at
         FROM read_json(
-            's3://{st.secrets['SPOTIFY_DATA_S3_BUCKET']}/processed/',
+            's3://{st.secrets['SPOTIFY_DATA_S3_BUCKET']}/processed/year={year}/',
             hive_partitioning=1
         )
     """
-    if year:
-        base_query = base_query.replace('processed/', f'processed/year={year}/')
-        if month:
-            base_query = base_query.replace(f'processed/year={year}/', f'processed/year={year}/month={month}/*.json')
-        else:
-            base_query = base_query.replace(f'processed/year={year}/', f'processed/year={year}/**/*.json')
+    if month:
+        base_query = base_query.replace(f'processed/year={year}/', f'processed/year={year}/month={month}/*.json')
     else:
-        base_query = base_query.replace('processed/', 'processed/**/*')
+        base_query = base_query.replace(f'processed/year={year}/', f'processed/year={year}/**/*.json')
     return base_query
 
 
@@ -65,31 +62,60 @@ def convert_mmss_to_minutes(mmss_string: str) -> float:
     return Decimal(minutes) + Decimal(Decimal(seconds) / 60)
 
 
-# Read data from S3 + data processing
-year = st.sidebar.selectbox("Select Year", options=[None, '2025'])
-month = st.sidebar.selectbox("Select Month", options=[None, '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'])
+def get_calendar_date(year: str, week_number: int, day_of_week: str) -> str:
+    """Creates a date in yyyy-mm-dd format given a year, week number, and day of the week."""
+    weekday_map = {
+        'Sunday': 0,
+        'Monday': 1,
+        'Tuesday': 2,
+        'Wednesday': 3,
+        'Thursday': 4,
+        'Friday': 5,
+        'Saturday': 6
+    }
+    jan1 = pd.Timestamp(f'{year}-01-01')
+    days_to_sunday = (jan1.weekday() + 1) % 7
+    start_of_week1 = jan1 - pd.Timedelta(days=days_to_sunday)
+    start_of_week_number = start_of_week1 + pd.Timedelta(weeks=week_number - 1)
+    return (start_of_week_number + pd.Timedelta(days=weekday_map[day_of_week]))
+
+
+# Initial data processing + read data from S3
+years = range(2025, datetime.datetime.now().year + 1)
+year = st.sidebar.selectbox('Select Year', options=years, index=len(years) - 1)
+month = st.sidebar.selectbox('Select Month', options=[None, '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'])
+jan1 = pd.Timestamp(f'{year}-01-01')
+dec31 = pd.Timestamp(f'{year}-12-31')
+jan1_weekday = pd.Timestamp(f'{year}-01-01').weekday()
+days_to_sunday = (jan1.weekday() + 1) % 7
+start_of_week1 = jan1 - pd.Timedelta(days=days_to_sunday)
 sql_query = generate_sql_query(year, month)
 df = fetch_s3_data(sql_query)
+
+# Data processing post read
 df['artists_clean'] = df['artists'].apply(lambda x: ', '.join(map(str, x)))
 df['track_length_minutes'] = round(df['track_length'].astype(str).apply(lambda x: convert_mmss_to_minutes(x) if isinstance(x, str) else x).astype(float), 2)
 df['played_at_timestamp'] = pd.to_datetime(df['played_at'])
+df['played_at_date'] = pd.to_datetime(df['played_at_timestamp'].dt.date)
 df['played_at_day_of_week'] = df['played_at_timestamp'].dt.day_name()
 day_order = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 df['played_at_day_of_week'] = pd.Categorical(df['played_at_day_of_week'], categories=day_order, ordered=True)
 df['played_at_hour'] = df['played_at_timestamp'].dt.hour
-hour_order = list(range(0, 24))
+hour_order = list(range(0, 25))
 df['played_at_hour'] = pd.Categorical(df['played_at_hour'], categories=hour_order, ordered=True)
-df['played_at_week_number'] = df['played_at_timestamp'].dt.isocalendar().week
-week_order = list(range(1, 53))
+df['played_at_week_number'] = ((df['played_at_date'] - start_of_week1).dt.days // 7) + 1
+week_order = list(range(1, 54))
 df['played_at_week_number'] = pd.Categorical(df['played_at_week_number'], categories=week_order, ordered=True)
 most_played_tracks = df.groupby(['track_name', 'artists_clean']).size().reset_index(name='count').sort_values(by='count', ascending=False).head(10)
 max_track_play_count = most_played_tracks['count'].max()
 most_played_artists = df.explode('artists').reset_index(drop=True)[['artists', 'track_length_minutes']].groupby('artists').sum().reset_index().sort_values(by='track_length_minutes', ascending=False).head(10)
 most_played_artists['track_length_minutes'] = round(most_played_artists['track_length_minutes'].astype(float))
 most_played_artist_minutes = most_played_artists['track_length_minutes'].max()
-day_of_week_track_distribution = df[['played_at_day_of_week', 'track_length_minutes']].groupby('played_at_day_of_week').sum().reset_index()
-time_of_day_track_distribution = df[['played_at_hour', 'track_length_minutes']].groupby('played_at_hour').sum().reset_index()
-listening_heatmap = df.groupby(['played_at_week_number', 'played_at_day_of_week'], as_index=False)['track_length_minutes'].sum()
+day_of_week_track_distribution = df[['played_at_day_of_week', 'track_length_minutes']].groupby('played_at_day_of_week', observed=False).sum().reset_index()
+time_of_day_track_distribution = df[['played_at_hour', 'track_length_minutes']].groupby('played_at_hour', observed=False).sum().reset_index()
+listening_heatmap = df.groupby(['played_at_week_number', 'played_at_day_of_week'], observed=False)['track_length_minutes'].sum().reset_index()
+listening_heatmap['played_at_date'] = listening_heatmap.apply(lambda row: get_calendar_date(year=year, week_number=row['played_at_week_number'], day_of_week=row['played_at_day_of_week']), axis=1)
+listening_heatmap = listening_heatmap[(listening_heatmap['played_at_date'] >= jan1) & (listening_heatmap['played_at_date'] <= dec31)]
 
 
 # App UI code
@@ -179,8 +205,7 @@ st.altair_chart(
         y=alt.Y('played_at_day_of_week:N', title='Day of Week', sort=day_order),
         color=alt.Color('track_length_minutes:Q', scale=color_scale, title='Minutes Listened'),
         tooltip=[
-            alt.Tooltip('played_at_week_number:O', title='Week Number'),
-            alt.Tooltip('played_at_day_of_week:N', title='Day of Week'),
+            alt.Tooltip('played_at_date:T', title='Date', format='%Y-%m-%d'),
             alt.Tooltip('track_length_minutes:Q', title='Total Minutes')
         ]
     ).properties(
