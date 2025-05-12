@@ -116,14 +116,19 @@ time_of_day_track_distribution = df[['played_at_hour', 'track_length_minutes']].
 listening_heatmap = df.groupby(['played_at_week_number', 'played_at_day_of_week'], observed=False)['track_length_minutes'].sum().reset_index()
 listening_heatmap['played_at_date'] = listening_heatmap.apply(lambda row: get_calendar_date(year=year, week_number=row['played_at_week_number'], day_of_week=row['played_at_day_of_week']), axis=1)
 listening_heatmap = listening_heatmap[(listening_heatmap['played_at_date'] >= jan1) & (listening_heatmap['played_at_date'] <= dec31)]
-
+artists = []
+for row in df.itertuples():
+    track_artists = str(row[4]).split(',')
+    for track_artist in track_artists:
+        if track_artist not in artists:
+            artists.append(track_artist)
 
 # App UI code
 st.title('My Spotify Listening History')
 spotify_green = '#1DB954'
 col1, col2, col3, col4 = st.columns(4)
-col1.metric('Total Tracks', df.shape[0])
-col2.metric('Total Artists', len(set(df['artists_clean'].str.split(',').sum())))
+col1.metric('Total Tracks', df['track_id'].nunique())
+col2.metric('Total Artists', len(artists))
 col3.metric('Total Minutes', round(df['track_length_minutes'].sum()))
 col4.metric('Average Track Popularity (1-100)', round(df['track_popularity'].astype(float).mean()))
 st.divider()
