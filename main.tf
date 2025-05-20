@@ -39,10 +39,10 @@ data "aws_iam_policy_document" "eventbridge_role_inline_policy_document" {
 
 module "eventbridge_role" {
   source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
-  role_name                 = "eventbridge-role"
+  role_name                 = "spotify-listening-history-app-eventbridge-role"
   trust_relationship_policy = data.aws_iam_policy_document.eventbridge_trust_relationship_policy.json
   inline_policy             = data.aws_iam_policy_document.eventbridge_role_inline_policy_document.json
-  inline_policy_description = "Policy for EventBridge Scheduler to invoke Lambda functions"
+  inline_policy_description = "Policy for EventBridge Scheduler to invoke Spotify listening history app Lambda functions"
   environment               = var.environment
   project                   = var.project_name
 }
@@ -147,7 +147,7 @@ module "sns_email_subscription" {
   sns_topic_name = "lambda-failure-notification-topic"
   user_email     = var.email
   environment    = var.environment
-  project        = var.project_name
+  project        = "accountSetup"
 }
 
 module "s3_trigger_lambda_etl" {
