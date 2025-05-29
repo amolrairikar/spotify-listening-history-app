@@ -55,8 +55,6 @@ module "eventbridge_scheduler" {
   schedule_timezone    = "America/Chicago"
   schedule_state       = "ENABLED"
   scheduler_name       = "spotify-listening-history-app-eventbridge-scheduler"
-  environment          = var.environment
-  project              = var.project_name
 }
 
 data "aws_iam_policy_document" "lambda_trust_relationship_policy" {
