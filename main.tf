@@ -52,10 +52,9 @@ module "eventbridge_scheduler" {
   eventbridge_role_arn = module.eventbridge_role.role_arn
   lambda_arn           = module.spotify_get_recently_played_lambda.lambda_arn
   schedule_frequency   = "rate(1 hour)"
-  schedule_timezone   = "America/Chicago"
+  schedule_timezone    = "America/Chicago"
   schedule_state       = "ENABLED"
-  environment          = var.environment
-  project              = var.project_name
+  scheduler_name       = "spotify-listening-history-app-eventbridge-scheduler"
 }
 
 data "aws_iam_policy_document" "lambda_trust_relationship_policy" {
@@ -133,6 +132,7 @@ module "spotify_get_recently_played_lambda" {
   lambda_handler                 = "get_recently_played.lambda_handler"
   lambda_memory_size             = "256"
   lambda_runtime                 = "python3.12"
+  lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_get_recently_played_role.role_arn
   sns_topic_arn                  = module.sns_email_subscription.topic_arn
     lambda_environment_variables = {
@@ -236,6 +236,7 @@ module "spotify_etl_lambda" {
   lambda_handler                 = "perform_etl.lambda_handler"
   lambda_memory_size             = "256"
   lambda_runtime                 = "python3.12"
+  lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_etl_role.role_arn
   sns_topic_arn                  = module.sns_email_subscription.topic_arn
     lambda_environment_variables = {
