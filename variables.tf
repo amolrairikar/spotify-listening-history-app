@@ -37,3 +37,8 @@ variable "spotify_client_secret" {
   description = "Spotify API client secret"
   type        = string
 }
+
+variable "sns_topic_arn" {
+  description = "ARN of SNS topic for Lambda failure notifications"
+  type        = string
+}
