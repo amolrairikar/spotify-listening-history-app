@@ -96,7 +96,7 @@ data "aws_iam_policy_document" "lambda_get_recently_played_execution_role_inline
       "sns:Publish"
     ]
     resources = [
-      module.sns_email_subscription.topic_arn
+      var.sns_topic_arn
     ]
   }
   statement {
@@ -134,20 +134,12 @@ module "spotify_get_recently_played_lambda" {
   lambda_runtime                 = "python3.12"
   lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_get_recently_played_role.role_arn
-  sns_topic_arn                  = module.sns_email_subscription.topic_arn
+  sns_topic_arn                  = var.sns_topic_arn
     lambda_environment_variables = {
       CLIENT_ID      = var.spotify_client_id
       CLIENT_SECRET  = var.spotify_client_secret
       S3_BUCKET_NAME = var.datalake_bucket_name
   }
-}
-
-module "sns_email_subscription" {
-  source         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/sns-email-subscription?ref=main"
-  sns_topic_name = "lambda-failure-notification-topic"
-  user_email     = var.email
-  environment    = var.environment
-  project        = "accountSetup"
 }
 
 module "s3_trigger_lambda_etl" {
@@ -200,7 +192,7 @@ data "aws_iam_policy_document" "lambda_etl_execution_role_inline_policy_document
       "sns:Publish"
     ]
     resources = [
-      module.sns_email_subscription.topic_arn
+      var.sns_topic_arn
     ]
   }
   statement {
@@ -238,7 +230,7 @@ module "spotify_etl_lambda" {
   lambda_runtime                 = "python3.12"
   lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_etl_role.role_arn
-  sns_topic_arn                  = module.sns_email_subscription.topic_arn
+  sns_topic_arn                  = var.sns_topic_arn
     lambda_environment_variables = {
       S3_BUCKET_NAME = var.datalake_bucket_name
   }
