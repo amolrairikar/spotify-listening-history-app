@@ -27,33 +27,6 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
-# Function to dynamically determine if LocalStack is running and set endpoint URL accordingly
-def is_localstack_running(localstack_health_url: str):
-    try:
-        response = requests.get(localstack_health_url)
-        if response.status_code == 200:
-            data = response.json()
-            logger.info(f'LocalStack health check response: {data}')
-            for service, status in data.get('services', {}).items():
-                if status not in ('available', 'running'):
-                    logger.warning(f'LocalStack service {service} is not available.')
-                    return False
-            logger.info('LocalStack is running and all services are available.')
-            return True
-    except requests.RequestException as e:
-        logger.warning(f'LocalStack health endpoint not found')
-        pass
-    return False
-
-
-if is_localstack_running(localstack_health_url='http://localstack:4566/_localstack/health'):
-    logger.info('Setting endpoint URL to http://localstack:4566')
-    AWS_ENDPOINT_URL = 'http://localstack:4566'
-else:
-    logger.info('Setting endpoint URL to None')
-    AWS_ENDPOINT_URL = None
-
-
 def is_retryable_exception(e: botocore.exceptions.ClientError) -> bool:
     """Checks if the returned exception is retryable."""
     if isinstance(e, botocore.exceptions.ClientError):
@@ -157,10 +130,7 @@ class S3Client:
     "Class to interact with objects in S3."
 
     def __init__(self, region: str):
-        if AWS_ENDPOINT_URL:
-            self.client = boto3.client('s3', region_name=region, endpoint_url=AWS_ENDPOINT_URL)
-        else:
-            self.client = boto3.client('s3', region_name=region)
+        self.client = boto3.client('s3', region_name=region)
 
 
     @backoff_on_client_error

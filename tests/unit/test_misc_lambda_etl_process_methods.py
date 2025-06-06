@@ -6,7 +6,6 @@ import requests
 import botocore
 
 from src.lambdas.etl_process.perform_etl import (
-    is_localstack_running,
     is_retryable_exception,
     convert_utc_to_cst,
     milliseconds_to_mmss,
@@ -14,33 +13,6 @@ from src.lambdas.etl_process.perform_etl import (
     perform_etl,
     partition_spotify_data
 )
-
-
-class TestIsLocalstackRunning(unittest.TestCase):
-    """Class for testing is_localstack_running method."""
-
-    @patch('src.lambdas.get_recently_played.get_recently_played.requests.get')
-    def test_localstack_running(self, mock_get):
-        """Tests the method returns True when Localstack is running."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'services': {'s3': 'available', 'lambda': 'available'}}
-        mock_get.return_value = mock_response
-
-        result = is_localstack_running(localstack_health_url='http://localhost:4566/_localstack/health')
-
-        self.assertTrue(result)
-        mock_get.assert_called_once_with('http://localhost:4566/_localstack/health')
-
-    @patch('src.lambdas.get_recently_played.get_recently_played.requests.get')
-    def test_localstack_running(self, mock_get):
-        """Tests the method returns False when Localstack is running."""
-        mock_get.side_effect = requests.RequestException('Connection error')
-
-        result = is_localstack_running(localstack_health_url='http://localhost:4566/_localstack/health')
-
-        self.assertFalse(result)
-        mock_get.assert_called_once_with('http://localhost:4566/_localstack/health')
 
 
 class TestIsRetryableException(unittest.TestCase):
