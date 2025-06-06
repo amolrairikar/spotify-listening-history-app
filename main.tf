@@ -17,7 +17,7 @@ module "spotify_project_data_bucket" {
   environment       = var.environment
   project           = var.project_name
   versioning_status = "Enabled"
-  bucket_acl        = "private"
+  enable_acl        = false
   object_ownership  = "BucketOwnerEnforced"
 }
 
