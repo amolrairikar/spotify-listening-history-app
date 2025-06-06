@@ -17,6 +17,8 @@ module "spotify_project_data_bucket" {
   environment       = var.environment
   project           = var.project_name
   versioning_status = "Enabled"
+  enable_acl        = false
+  object_ownership  = "BucketOwnerEnforced"
 }
 
 data "aws_iam_policy_document" "eventbridge_trust_relationship_policy" {
