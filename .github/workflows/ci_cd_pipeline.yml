@@ -32,10 +32,20 @@ jobs:
       - name: Run unit and component tests
         run: ./pipeline_scripts/run_tests.sh
 
-  integration_tests:
+  build_lambdas:
 
     runs-on: ubuntu-latest
     needs: get_test_coverage
+    strategy:
+      matrix:
+        lambda:
+          - name: get_recently_played
+            handler: lambda_handler
+            path: src/lambdas/get_recently_played
+          - name: etl_process
+            handler: lambda_handler
+            path: src/lambdas/etl_process
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,47 +55,24 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies for testing
+      - name: Install zip
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Build Lambda package
         run: |
-          python -m pip install --upgrade pip
-          pip install behave
-          pip install -r src/lambdas/get_recently_played/requirements.txt
-
-      - name: Make the test script executable
-        run: chmod +x pipeline_scripts/run_integration_tests.sh
-
-      - name: Set environment variables
-        run: |
-          echo "SPOTIFY_REFRESH_TOKEN=${{ secrets.SPOTIFY_REFRESH_TOKEN }}" >> $GITHUB_ENV
-          echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> $GITHUB_ENV
-          echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> $GITHUB_ENV
-          echo "S3_BUCKET_NAME=test-bucket" >> $GITHUB_ENV
-  
-      - name: Run integration_tests
-        run: ./pipeline_scripts/run_integration_tests.sh
-
-      - name: List files in the src/lambdas/get_recently_played directory
-        run: ls -la src/lambdas/get_recently_played
+          chmod +x ./zip_lambdas.sh
+          ./zip_lambdas.sh "${{ matrix.lambda.name }}" "${{ matrix.lambda.handler }}" "${{ matrix.lambda.path }}"
 
       - name: Upload Lambda zip as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fetch-recently-played-lambda-zip
-          path: src/lambdas/get_recently_played/get_recently_played.zip
-
-      - name: List files in the src/lambdas/etl_process directory
-        run: ls -la src/lambdas/etl_process
-
-      - name: Upload Lambda zip as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: etl-lambda-zip
-          path: src/lambdas/etl_process/perform_etl.zip
+          name: ${{ matrix.lambda.name }}_lambda_zip
+          path: ${{ matrix.lambda.path }}/${{ matrix.lambda.name }}.zip
 
   deploy_infrastructure:
 
     runs-on: ubuntu-latest
-    needs: integration_tests
+    needs: build_lambdas
     env:
       S3_STATE_BUCKET_NAME: ${{ secrets.S3_STATE_BUCKET_NAME }}
       S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
@@ -107,12 +94,12 @@ jobs:
       - name: Download Lambda fetch recently played zip artifact
         uses: actions/download-artifact@v4
         with:
-          name: fetch-recently-played-lambda-zip
+          name: get_recently_played_lambda_zip
 
       - name: Download Lambda ETL zip artifact
         uses: actions/download-artifact@v4
         with:
-          name: etl-lambda-zip
+          name: etl_process_lambda_zip
 
       - name: List files in the root directory
         run: ls -la
