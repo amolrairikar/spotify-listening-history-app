@@ -40,10 +40,10 @@ jobs:
       matrix:
         lambda:
           - name: get_recently_played
-            handler: lambda_handler
+            handler_file: get_recently_played.py
             path: src/lambdas/get_recently_played
           - name: etl_process
-            handler: lambda_handler
+            handler_file: perform_etl.py
             path: src/lambdas/etl_process
 
     steps:
@@ -61,7 +61,7 @@ jobs:
       - name: Build Lambda package
         run: |
           chmod +x ./pipeline_scripts/zip_lambdas.sh
-          ./pipeline_scripts/zip_lambdas.sh "${{ matrix.lambda.name }}" "${{ matrix.lambda.handler }}" "${{ matrix.lambda.path }}"
+          ./pipeline_scripts/zip_lambdas.sh "${{ matrix.lambda.name }}" "${{ matrix.lambda.handler_file }}" "${{ matrix.lambda.path }}"
 
       - name: Upload Lambda zip as artifact
         uses: actions/upload-artifact@v4
