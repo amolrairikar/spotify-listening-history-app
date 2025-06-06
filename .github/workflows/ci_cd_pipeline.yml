@@ -60,8 +60,8 @@ jobs:
 
       - name: Build Lambda package
         run: |
-          chmod +x ./zip_lambdas.sh
-          ./zip_lambdas.sh "${{ matrix.lambda.name }}" "${{ matrix.lambda.handler }}" "${{ matrix.lambda.path }}"
+          chmod +x ./pipeline_scripts/zip_lambdas.sh
+          ./pipeline_scripts/zip_lambdas.sh "${{ matrix.lambda.name }}" "${{ matrix.lambda.handler }}" "${{ matrix.lambda.path }}"
 
       - name: Upload Lambda zip as artifact
         uses: actions/upload-artifact@v4
