@@ -12,7 +12,7 @@ provider "aws" {
 
 module "spotify_project_data_bucket" {
   source            = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/s3-bucket-private?ref=main"
-  bucket_prefix     = "spotify-listening-history-app-data-lake"
+  bucket_name       = "spotify-listening-history-app-data-lake-${var.account_number}-${var.environment}"
   account_number    = var.account_number
   environment       = var.environment
   project           = var.project_name
