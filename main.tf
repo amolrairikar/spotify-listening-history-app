@@ -227,7 +227,7 @@ module "spotify_etl_lambda" {
   project                        = var.project_name
   lambda_name                    = "spotify-etl-lambda"
   lambda_description             = "Lambda function to perform ETL on Spotify API recently played tracks response raw JSON"
-  lambda_filename                = "perform_etl.zip"
+  lambda_filename                = "etl_process.zip"
   lambda_handler                 = "perform_etl.lambda_handler"
   lambda_memory_size             = "256"
   lambda_runtime                 = "python3.12"
