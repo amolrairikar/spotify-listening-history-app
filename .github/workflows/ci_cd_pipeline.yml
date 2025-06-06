@@ -5,7 +5,7 @@ on:
 
 permissions:
   contents: read
-  token-id: write
+  id-token: write
 
 jobs:
 
