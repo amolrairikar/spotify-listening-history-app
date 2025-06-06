@@ -104,11 +104,10 @@ jobs:
       - name: List files in the root directory
         run: ls -la
 
-      - name: Set up AWS credentials
+      - name: Set up AWS credentials (using OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.TF_VAR_INFRA_ROLE_ARN }}
           aws-region: 'us-east-2'
 
       - name: Set up Terraform
