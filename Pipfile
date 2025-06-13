@@ -4,19 +4,20 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-streamlit = "*"
-python-dotenv = "*"
-fastapi = "*"
-uvicorn = "*"
-requests = "*"
-boto3 = "*"
-backoff = "*"
-duckdb = "*"
 altair = "*"
+boto3 = "*"
+duckdb = "*"
+fastapi = "*"
+python-dotenv = "*"
+requests = "*"
+streamlit = "*"
+uvicorn = "*"
+
 
 [dev-packages]
-coverage = "*"
+backoff = "*"
 behave = "*"
+coverage = "*"
 moto = "*"
 
 [requires]
