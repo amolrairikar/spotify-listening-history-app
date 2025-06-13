@@ -1,18 +1,14 @@
 """Module containing ETL code for Lambda function to write processed Spotify listening history data to S3."""
 from typing import Dict, Any, Tuple, List
-from functools import wraps
 import logging
 import json
 import uuid
 
 import boto3
-import botocore
-import botocore.exceptions
-import backoff
 import pytz
 import datetime
-import requests
 from dotenv import load_dotenv
+from retry_api_exceptions import backoff_on_client_error
 
 # Load environment variables
 load_dotenv()
@@ -25,44 +21,6 @@ console_handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
-
-
-def is_retryable_exception(e: botocore.exceptions.ClientError) -> bool:
-    """Checks if the returned exception is retryable."""
-    if isinstance(e, botocore.exceptions.ClientError):
-        return e.response['Error']['Code'] in [
-            'InternalServerError'
-        ]
-    return False
-
-
-def backoff_on_client_error(func):
-    """Reusable decorator to retry API calls for server errors."""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        instance_or_class = None
-
-        # If the function is a method, extract `self` or `cls`
-        if args and hasattr(args[0], func.__name__):
-            instance_or_class, *args = args
-
-        @backoff.on_exception(
-            backoff.expo,
-            (botocore.exceptions.ClientError),
-            max_tries=3,
-            giveup=lambda e: not is_retryable_exception(e),
-            on_success=lambda details: logger.info(f"Success after {details['tries']} tries"),
-            on_giveup=lambda details: logger.info(f"Giving up after {details['tries']} tries"),
-            on_backoff=lambda details: logger.info(f"Backing off after {details['tries']} tries due to {details['exception']}")
-        )
-        def retryable_call(*args, **kwargs):
-            if instance_or_class:
-                return func(instance_or_class, *args, **kwargs)  # Call method
-            return func(*args, **kwargs)  # Call standalone function
-
-        return retryable_call(*args, **kwargs)
-
-    return wrapper
 
 
 def convert_utc_to_cst(utc_string: str) -> str:

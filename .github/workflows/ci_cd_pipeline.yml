@@ -27,11 +27,17 @@ jobs:
           pip install pipenv
           pipenv install --dev
 
-      - name: Make the test script executable
-        run: chmod +x pipeline_scripts/run_tests.sh
+      - name: Copy retry_api_exceptions.py file
+        run: |
+          wget --tries=3 https://raw.githubusercontent.com/amolrairikar/aws-account-infrastructure-setup/refs/heads/main/layers/retry_api_exceptions/retry_api_exceptions.py
+          cp retry_api_exceptions.py src/lambdas/etl_process/retry_api_exceptions.py
+          cp retry_api_exceptions.py src/lambdas/get_recently_played/retry_api_exceptions.py
 
-      - name: Run unit and component tests
-        run: ./pipeline_scripts/run_tests.sh
+      - name: Get test script and run tests
+        run: |
+          wget --tries=3 https://raw.githubusercontent.com/amolrairikar/aws-account-infrastructure-setup/refs/heads/main/scripts/run_tests.sh
+          chmod +x run_tests.sh
+          ./run_tests.sh --source src --omit "src/lambdas/etl_process/retry_api_exceptions.py,src/lambdas/get_recently_played/retry_api_exceptions.py"
 
   build_lambdas:
 
