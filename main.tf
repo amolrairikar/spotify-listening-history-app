@@ -62,6 +62,10 @@ module "eventbridge_scheduler" {
   scheduler_name       = "spotify-listening-history-app-eventbridge-scheduler"
 }
 
+data "aws_lambda_layer_version" "latest_retry_api" {
+  layer_name = "retry_api_exceptions"
+}
+
 data "aws_iam_policy_document" "lambda_trust_relationship_policy" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -139,6 +143,7 @@ module "spotify_get_recently_played_lambda" {
   lambda_runtime                 = "python3.12"
   lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_get_recently_played_role.role_arn
+  lambda_layers                  = [data.aws_lambda_layer_version.latest_retry_api.arn]
   sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     lambda_environment_variables = {
       CLIENT_ID      = var.spotify_client_id
@@ -235,6 +240,7 @@ module "spotify_etl_lambda" {
   lambda_runtime                 = "python3.12"
   lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_etl_role.role_arn
+  lambda_layers                  = [data.aws_lambda_layer_version.latest_retry_api.arn]
   sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     lambda_environment_variables = {
       S3_BUCKET_NAME = var.datalake_bucket_name
