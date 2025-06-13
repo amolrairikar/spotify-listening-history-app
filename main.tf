@@ -131,7 +131,7 @@ module "spotify_get_recently_played_lambda" {
   source                         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
   environment                    = var.environment
   project                        = var.project_name
-  lambda_name                    = "spotify-listening-history-lambda"
+  lambda_name                    = "spotify-listening-history"
   lambda_description             = "Lambda function to fetch recently played tracks from Spotify API"
   lambda_filename                = "get_recently_played.zip"
   lambda_handler                 = "get_recently_played.lambda_handler"
@@ -227,7 +227,7 @@ module "spotify_etl_lambda" {
   source                         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
   environment                    = var.environment
   project                        = var.project_name
-  lambda_name                    = "spotify-etl-lambda"
+  lambda_name                    = "spotify-etl"
   lambda_description             = "Lambda function to perform ETL on Spotify API recently played tracks response raw JSON"
   lambda_filename                = "etl_process.zip"
   lambda_handler                 = "perform_etl.lambda_handler"
