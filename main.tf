@@ -67,7 +67,7 @@ data "aws_iam_policy_document" "lambda_get_recently_played_execution_role_inline
       "s3:PutObject"
     ]
     resources = [
-      "arn:aws:s3:::${var.datalake_bucket_name}/raw/*"
+      "arn:aws:s3:::${module.spotify_project_data_bucket.bucket_id}/raw/*"
     ]
   }
   statement {
@@ -119,7 +119,7 @@ module "spotify_get_recently_played_lambda" {
     lambda_environment_variables = {
       CLIENT_ID      = var.spotify_client_id
       CLIENT_SECRET  = var.spotify_client_secret
-      S3_BUCKET_NAME = var.datalake_bucket_name
+      S3_BUCKET_NAME = module.spotify_project_data_bucket.bucket_id
   }
 }
 
@@ -141,7 +141,7 @@ data "aws_iam_policy_document" "lambda_etl_execution_role_inline_policy_document
       "s3:PutObject"
     ]
     resources = [
-      "arn:aws:s3:::${var.datalake_bucket_name}/processed/*"
+      "arn:aws:s3:::${module.spotify_project_data_bucket.bucket_id}/processed/*"
     ]
   }
   statement {
@@ -150,7 +150,7 @@ data "aws_iam_policy_document" "lambda_etl_execution_role_inline_policy_document
       "s3:GetObject"
     ]
     resources = [
-      "arn:aws:s3:::${var.datalake_bucket_name}/raw/*"
+      "arn:aws:s3:::${module.spotify_project_data_bucket.bucket_id}/raw/*"
     ]
   }
   statement {
@@ -159,7 +159,7 @@ data "aws_iam_policy_document" "lambda_etl_execution_role_inline_policy_document
       "s3:ListBucket"
     ]
     resources = [
-      "arn:aws:s3:::${var.datalake_bucket_name}"
+      "arn:aws:s3:::${module.spotify_project_data_bucket.bucket_id}"
     ]
     condition {
       test     = "StringLike"
@@ -214,6 +214,6 @@ module "spotify_etl_lambda" {
   lambda_layers                  = [data.aws_lambda_layer_version.latest_retry_api.arn]
   sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     lambda_environment_variables = {
-      S3_BUCKET_NAME = var.datalake_bucket_name
+      S3_BUCKET_NAME = module.spotify_project_data_bucket.bucket_id
   }
 }

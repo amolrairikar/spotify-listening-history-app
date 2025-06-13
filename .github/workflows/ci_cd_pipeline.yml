@@ -109,10 +109,8 @@ jobs:
       TF_VAR_environment: "prod"
       TF_VAR_project_name: "spotifyListeningHistoryApp"
       TF_VAR_aws_region_name: "us-east-2"
-      TF_VAR_datalake_bucket_name: ${{ secrets.S3_BUCKET_NAME }}
       TF_VAR_spotify_client_id: ${{ secrets.CLIENT_ID }}
       TF_VAR_spotify_client_secret: ${{ secrets.CLIENT_SECRET }}
-      TF_VAR_sns_topic_arn: ${{ secrets.SNS_TOPIC_ARN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
