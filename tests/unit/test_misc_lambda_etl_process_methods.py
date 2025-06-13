@@ -1,41 +1,13 @@
 """Module for testing utility functions in the ETL Lambda function."""
 import unittest
-from unittest.mock import patch, MagicMock
-
-import requests
-import botocore
 
 from src.lambdas.etl_process.perform_etl import (
-    is_retryable_exception,
     convert_utc_to_cst,
     milliseconds_to_mmss,
     get_bucket_and_object,
     perform_etl,
     partition_spotify_data
 )
-
-
-class TestIsRetryableException(unittest.TestCase):
-    """Class for testing is_retryable_exception method."""
-
-    def test_retryable_aws_error(self):
-        """Test a retryable botocore ClientError with InternalServerError."""
-        error_response = {'Error': {'Code': 'InternalServerError'}}
-        client_error = botocore.exceptions.ClientError(error_response, 'OperationName')
-        self.assertTrue(is_retryable_exception(e=client_error))
-
-
-    def test_non_retryable_aws_error(self):
-        """Test a non-retryable botocore ClientError with a different error code."""
-        error_response = {'Error': {'Code': 'AccessDenied'}}
-        client_error = botocore.exceptions.ClientError(error_response, 'OperationName')
-        self.assertFalse(is_retryable_exception(e=client_error))
-
-
-    def test_non_retryable_other_exception(self):
-        """Test an exception that is not a ClientError."""
-        other_exception = ValueError('Some other exception')
-        self.assertFalse(is_retryable_exception(e=other_exception))
 
 
 class TestConvertUtcToCst(unittest.TestCase):

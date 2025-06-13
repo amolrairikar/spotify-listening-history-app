@@ -10,10 +10,12 @@ provider "aws" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 module "spotify_project_data_bucket" {
   source            = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/s3-bucket-private?ref=main"
-  bucket_name       = "spotify-listening-history-app-data-lake-${var.account_number}-${var.environment}"
-  account_number    = var.account_number
+  bucket_name       = "spotify-listening-history-app-data-lake-${data.aws_caller_identity.current.account_id}-${var.environment}"
+  account_number    = data.aws_caller_identity.current.account_id
   environment       = var.environment
   project           = var.project_name
   versioning_status = "Enabled"
@@ -21,43 +23,18 @@ module "spotify_project_data_bucket" {
   object_ownership  = "BucketOwnerEnforced"
 }
 
-data "aws_iam_policy_document" "eventbridge_trust_relationship_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    effect  = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["scheduler.amazonaws.com"]
-    }
-  }
-}
-
-data "aws_iam_policy_document" "eventbridge_role_inline_policy_document" {
-  statement {
-    effect    = "Allow"
-    actions   = ["lambda:InvokeFunction"]
-    resources = [module.spotify_get_recently_played_lambda.lambda_arn]
-  }
-}
-
-module "eventbridge_role" {
-  source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
-  role_name                 = "spotify-listening-history-app-eventbridge-role"
-  trust_relationship_policy = data.aws_iam_policy_document.eventbridge_trust_relationship_policy.json
-  inline_policy             = data.aws_iam_policy_document.eventbridge_role_inline_policy_document.json
-  inline_policy_description = "Policy for EventBridge Scheduler to invoke Spotify listening history app Lambda functions"
-  environment               = var.environment
-  project                   = var.project_name
-}
-
 module "eventbridge_scheduler" {
   source               = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/eventbridge-scheduler?ref=main"
-  eventbridge_role_arn = module.eventbridge_role.role_arn
+  eventbridge_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eventbridge-role"
   lambda_arn           = module.spotify_get_recently_played_lambda.lambda_arn
   schedule_frequency   = "rate(1 hour)"
   schedule_timezone    = "America/Chicago"
   schedule_state       = "ENABLED"
   scheduler_name       = "spotify-listening-history-app-eventbridge-scheduler"
+}
+
+data "aws_lambda_layer_version" "latest_retry_api" {
+  layer_name = "retry_api_exceptions"
 }
 
 data "aws_iam_policy_document" "lambda_trust_relationship_policy" {
@@ -80,8 +57,8 @@ data "aws_iam_policy_document" "lambda_get_recently_played_execution_role_inline
         "ssm:PutParameter"
     ]
     resources = [
-        "arn:aws:ssm:us-east-2:${var.account_number}:parameter/spotify_refresh_token",
-        "arn:aws:ssm:us-east-2:${var.account_number}:parameter/spotify_last_fetched_time"
+        "arn:aws:ssm:us-east-2:${data.aws_caller_identity.current.account_id}:parameter/spotify_refresh_token",
+        "arn:aws:ssm:us-east-2:${data.aws_caller_identity.current.account_id}:parameter/spotify_last_fetched_time"
     ]
   }
   statement {
@@ -99,7 +76,7 @@ data "aws_iam_policy_document" "lambda_get_recently_played_execution_role_inline
       "sns:Publish"
     ]
     resources = [
-      var.sns_topic_arn
+      "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     ]
   }
   statement {
@@ -129,7 +106,7 @@ module "spotify_get_recently_played_lambda" {
   source                         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
   environment                    = var.environment
   project                        = var.project_name
-  lambda_name                    = "spotify-listening-history-lambda"
+  lambda_name                    = "spotify-listening-history"
   lambda_description             = "Lambda function to fetch recently played tracks from Spotify API"
   lambda_filename                = "get_recently_played.zip"
   lambda_handler                 = "get_recently_played.lambda_handler"
@@ -137,7 +114,8 @@ module "spotify_get_recently_played_lambda" {
   lambda_runtime                 = "python3.12"
   lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_get_recently_played_role.role_arn
-  sns_topic_arn                  = var.sns_topic_arn
+  lambda_layers                  = [data.aws_lambda_layer_version.latest_retry_api.arn]
+  sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     lambda_environment_variables = {
       CLIENT_ID      = var.spotify_client_id
       CLIENT_SECRET  = var.spotify_client_secret
@@ -195,7 +173,7 @@ data "aws_iam_policy_document" "lambda_etl_execution_role_inline_policy_document
       "sns:Publish"
     ]
     resources = [
-      var.sns_topic_arn
+      "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     ]
   }
   statement {
@@ -225,7 +203,7 @@ module "spotify_etl_lambda" {
   source                         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
   environment                    = var.environment
   project                        = var.project_name
-  lambda_name                    = "spotify-etl-lambda"
+  lambda_name                    = "spotify-etl"
   lambda_description             = "Lambda function to perform ETL on Spotify API recently played tracks response raw JSON"
   lambda_filename                = "etl_process.zip"
   lambda_handler                 = "perform_etl.lambda_handler"
@@ -233,7 +211,8 @@ module "spotify_etl_lambda" {
   lambda_runtime                 = "python3.12"
   lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_etl_role.role_arn
-  sns_topic_arn                  = var.sns_topic_arn
+  lambda_layers                  = [data.aws_lambda_layer_version.latest_retry_api.arn]
+  sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     lambda_environment_variables = {
       S3_BUCKET_NAME = var.datalake_bucket_name
   }

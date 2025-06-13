@@ -8,9 +8,7 @@ permissions:
   id-token: write
 
 jobs:
-
   get_test_coverage:
-
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -27,14 +25,19 @@ jobs:
           pip install pipenv
           pipenv install --dev
 
-      - name: Make the test script executable
-        run: chmod +x pipeline_scripts/run_tests.sh
+      - name: Copy retry_api_exceptions.py file
+        run: |
+          wget --tries=3 https://raw.githubusercontent.com/amolrairikar/aws-account-infrastructure-setup/refs/heads/main/layers/retry_api_exceptions/retry_api_exceptions.py
+          cp retry_api_exceptions.py src/lambdas/etl_process/retry_api_exceptions.py
+          cp retry_api_exceptions.py src/lambdas/get_recently_played/retry_api_exceptions.py
 
-      - name: Run unit and component tests
-        run: ./pipeline_scripts/run_tests.sh
+      - name: Get test script and run tests
+        run: |
+          wget --tries=3 https://raw.githubusercontent.com/amolrairikar/aws-account-infrastructure-setup/refs/heads/main/scripts/run_tests.sh
+          chmod +x run_tests.sh
+          ./run_tests.sh --source src --omit "src/lambdas/etl_process/retry_api_exceptions.py,src/lambdas/get_recently_played/retry_api_exceptions.py"
 
   build_lambdas:
-
     runs-on: ubuntu-latest
     needs: get_test_coverage
     strategy:
@@ -46,7 +49,6 @@ jobs:
           - name: etl_process
             handler_file: perform_etl.py
             path: src/lambdas/etl_process
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -68,23 +70,45 @@ jobs:
       - name: Upload Lambda zip as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.lambda.name }}_lambda_zip
+          name: lambda-${{ matrix.lambda.name }}
           path: ${{ matrix.lambda.path }}/${{ matrix.lambda.name }}.zip
 
-  deploy_infrastructure:
-
+  combine_artifacts:
     runs-on: ubuntu-latest
     needs: build_lambdas
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: combined-artifacts
+
+      - name: View files in combined-artifacts directory
+        run: ls -la combined-artifacts
+
+      - name: Move ZIPs to combined folder
+        run: |
+          mkdir combined-zips
+          find combined-artifacts -name '*.zip' -exec mv {} combined-zips/ \;
+
+      - name: Upload combined artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-lambdas
+          path: combined-zips/
+
+  deploy_infrastructure:
+    runs-on: ubuntu-latest
+    needs: combine_artifacts
     env:
       S3_STATE_BUCKET_NAME: ${{ secrets.S3_STATE_BUCKET_NAME }}
       S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
       CLIENT_ID: ${{ secrets.CLIENT_ID }}
       CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
       TF_VAR_infra_role_arn: ${{ secrets.TF_VAR_INFRA_ROLE_ARN }}
-      TF_VAR_account_number: ${{ secrets.AWS_ACCOUNT_ID }}
       TF_VAR_email: ${{ secrets.EMAIL }}
       TF_VAR_environment: "prod"
       TF_VAR_project_name: "spotifyListeningHistoryApp"
+      TF_VAR_aws_region_name: "us-east-2"
       TF_VAR_datalake_bucket_name: ${{ secrets.S3_BUCKET_NAME }}
       TF_VAR_spotify_client_id: ${{ secrets.CLIENT_ID }}
       TF_VAR_spotify_client_secret: ${{ secrets.CLIENT_SECRET }}
@@ -93,15 +117,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download Lambda fetch recently played zip artifact
+      - name: Download Lambda zip artifacts
         uses: actions/download-artifact@v4
         with:
-          name: get_recently_played_lambda_zip
-
-      - name: Download Lambda ETL zip artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: etl_process_lambda_zip
+          name: all-lambdas
+          path: .
 
       - name: List files in the root directory
         run: ls -la
@@ -121,7 +141,7 @@ jobs:
           terraform init \
             -backend-config="bucket=${S3_STATE_BUCKET_NAME}" \
             -backend-config="key=spotify-listening-history-app/terraform.tfstate" \
-            -backend-config="region=us-east-2" \
+            -backend-config="region=${TF_VAR_aws_region_name}" \
             -backend-config="assume_role={role_arn=\"${TF_VAR_infra_role_arn}\", session_name=\"terraform-session\"}"
 
       - name: Plan Terraform

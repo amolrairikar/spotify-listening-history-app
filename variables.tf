@@ -3,11 +3,6 @@ variable "infra_role_arn" {
   type        = string
 }
 
-variable "account_number" {
-  description = "The AWS account number"
-  type        = string
-}
-
 variable "email" {
   description = "Developer email to send notifications to"
   type        = string
@@ -23,6 +18,11 @@ variable "project_name" {
   type        = string
 }
 
+variable "aws_region_name" {
+  description = "The AWS region where resources are deployed"
+  type        = string
+}
+
 variable "datalake_bucket_name" {
   description = "The name of the S3 bucket serving as the project datalake"
   type        = string
@@ -35,10 +35,5 @@ variable "spotify_client_id" {
 
 variable "spotify_client_secret" {
   description = "Spotify API client secret"
-  type        = string
-}
-
-variable "sns_topic_arn" {
-  description = "ARN of SNS topic for Lambda failure notifications"
   type        = string
 }
