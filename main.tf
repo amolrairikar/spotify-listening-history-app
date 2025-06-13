@@ -23,35 +23,6 @@ module "spotify_project_data_bucket" {
   object_ownership  = "BucketOwnerEnforced"
 }
 
-data "aws_iam_policy_document" "eventbridge_trust_relationship_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    effect  = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["scheduler.amazonaws.com"]
-    }
-  }
-}
-
-data "aws_iam_policy_document" "eventbridge_role_inline_policy_document" {
-  statement {
-    effect    = "Allow"
-    actions   = ["lambda:InvokeFunction"]
-    resources = [module.spotify_get_recently_played_lambda.lambda_arn]
-  }
-}
-
-module "eventbridge_role" {
-  source                    = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/iam-role?ref=main"
-  role_name                 = "spotify-listening-history-app-eventbridge-role"
-  trust_relationship_policy = data.aws_iam_policy_document.eventbridge_trust_relationship_policy.json
-  inline_policy             = data.aws_iam_policy_document.eventbridge_role_inline_policy_document.json
-  inline_policy_description = "Policy for EventBridge Scheduler to invoke Spotify listening history app Lambda functions"
-  environment               = var.environment
-  project                   = var.project_name
-}
-
 module "eventbridge_scheduler" {
   source               = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/eventbridge-scheduler?ref=main"
   eventbridge_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eventbridge-role"
