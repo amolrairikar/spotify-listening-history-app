@@ -117,15 +117,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download Lambda fetch recently played zip artifact
+      - name: Download Lambda zip artifacts
         uses: actions/download-artifact@v4
         with:
-          name: get_recently_played_lambda_zip
-
-      - name: Download Lambda ETL zip artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: etl_process_lambda_zip
+          name: all-lambdas
+          path: .
 
       - name: List files in the root directory
         run: ls -la
