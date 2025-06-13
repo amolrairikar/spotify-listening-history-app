@@ -10,10 +10,12 @@ provider "aws" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 module "spotify_project_data_bucket" {
   source            = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/s3-bucket-private?ref=main"
-  bucket_name       = "spotify-listening-history-app-data-lake-${var.account_number}-${var.environment}"
-  account_number    = var.account_number
+  bucket_name       = "spotify-listening-history-app-data-lake-${data.aws_caller_identity.current.account_id}-${var.environment}"
+  account_number    = data.aws_caller_identity.current.account_id
   environment       = var.environment
   project           = var.project_name
   versioning_status = "Enabled"
@@ -52,7 +54,7 @@ module "eventbridge_role" {
 
 module "eventbridge_scheduler" {
   source               = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/eventbridge-scheduler?ref=main"
-  eventbridge_role_arn = module.eventbridge_role.role_arn
+  eventbridge_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eventbridge-role"
   lambda_arn           = module.spotify_get_recently_played_lambda.lambda_arn
   schedule_frequency   = "rate(1 hour)"
   schedule_timezone    = "America/Chicago"
@@ -80,8 +82,8 @@ data "aws_iam_policy_document" "lambda_get_recently_played_execution_role_inline
         "ssm:PutParameter"
     ]
     resources = [
-        "arn:aws:ssm:us-east-2:${var.account_number}:parameter/spotify_refresh_token",
-        "arn:aws:ssm:us-east-2:${var.account_number}:parameter/spotify_last_fetched_time"
+        "arn:aws:ssm:us-east-2:${data.aws_caller_identity.current.account_id}:parameter/spotify_refresh_token",
+        "arn:aws:ssm:us-east-2:${data.aws_caller_identity.current.account_id}:parameter/spotify_last_fetched_time"
     ]
   }
   statement {
@@ -99,7 +101,7 @@ data "aws_iam_policy_document" "lambda_get_recently_played_execution_role_inline
       "sns:Publish"
     ]
     resources = [
-      var.sns_topic_arn
+      "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     ]
   }
   statement {
@@ -137,7 +139,7 @@ module "spotify_get_recently_played_lambda" {
   lambda_runtime                 = "python3.12"
   lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_get_recently_played_role.role_arn
-  sns_topic_arn                  = var.sns_topic_arn
+  sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     lambda_environment_variables = {
       CLIENT_ID      = var.spotify_client_id
       CLIENT_SECRET  = var.spotify_client_secret
@@ -195,7 +197,7 @@ data "aws_iam_policy_document" "lambda_etl_execution_role_inline_policy_document
       "sns:Publish"
     ]
     resources = [
-      var.sns_topic_arn
+      "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     ]
   }
   statement {
@@ -233,7 +235,7 @@ module "spotify_etl_lambda" {
   lambda_runtime                 = "python3.12"
   lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_etl_role.role_arn
-  sns_topic_arn                  = var.sns_topic_arn
+  sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     lambda_environment_variables = {
       S3_BUCKET_NAME = var.datalake_bucket_name
   }
