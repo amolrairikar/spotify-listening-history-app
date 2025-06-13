@@ -23,11 +23,6 @@ variable "aws_region_name" {
   type        = string
 }
 
-variable "datalake_bucket_name" {
-  description = "The name of the S3 bucket serving as the project datalake"
-  type        = string
-}
-
 variable "spotify_client_id" {
   description = "Spotify API client ID"
   type        = string
