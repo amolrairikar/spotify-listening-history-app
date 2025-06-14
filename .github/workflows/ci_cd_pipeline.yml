@@ -84,8 +84,9 @@ jobs:
       - name: Build Lambda layer package
         if: steps.detect_layer_change.outputs.changed == 'true'
         run: |
-          chmod +x ./scripts/build_lambda_layer_package.sh
-          ./scripts/build_lambda_layer_package.sh "${{ matrix.lambda.name }}" "${{ matrix.lambda.path }}"
+          wget --tries=3 https://raw.githubusercontent.com/amolrairikar/aws-account-infrastructure-setup/refs/heads/main/scripts/build_lambda_package.sh
+          chmod +x ./build_lambda_package.sh
+          ./build_lambda_package.sh "${{ matrix.lambda.name }}" "${{ matrix.lambda.path }}"
 
       - name: Upload Lambda layer to S3
         if: steps.detect_layer_change.outputs.changed == 'true'
