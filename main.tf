@@ -104,7 +104,7 @@ module "lambda_get_recently_played_role" {
 
 data aws_s3_object "get_recently_played_zip" {
   bucket = "lambda-source-code-${data.aws_caller_identity.current.account_id}-bucket"
-  key    = "get_recently_played.zip"
+  key    = "spotify_get_recently_played.zip"
 }
 
 module "spotify_get_recently_played_lambda" {
@@ -208,7 +208,7 @@ module "lambda_etl_role" {
 
 data aws_s3_object "perform_etl_zip" {
   bucket = "lambda-source-code-${data.aws_caller_identity.current.account_id}-bucket"
-  key    = "perform_etl.zip"
+  key    = "spotify_perform_etl.zip"
 }
 
 module "spotify_etl_lambda" {
