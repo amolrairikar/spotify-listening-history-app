@@ -102,18 +102,25 @@ module "lambda_get_recently_played_role" {
   project                   = var.project_name
 }
 
+data aws_s3_object "get_recently_played_zip" {
+  bucket = module.code_bucket.bucket_id
+  key    = "get_recently_played.zip"
+}
+
 module "spotify_get_recently_played_lambda" {
   source                         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
   environment                    = var.environment
   project                        = var.project_name
   lambda_name                    = "spotify-listening-history"
   lambda_description             = "Lambda function to fetch recently played tracks from Spotify API"
-  lambda_filename                = "get_recently_played.zip"
   lambda_handler                 = "get_recently_played.lambda_handler"
   lambda_memory_size             = "256"
   lambda_runtime                 = "python3.12"
   lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_get_recently_played_role.role_arn
+  s3_bucket_name                 = "lambda-source-code-${data.aws_caller_identity.current.account_id}-bucket"
+  s3_object_key                  = "get_recently_played.zip"
+  s3_object_version              = data.aws_s3_object.get_recently_played_zip.version_id
   lambda_layers                  = [data.aws_lambda_layer_version.latest_retry_api.arn]
   sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     lambda_environment_variables = {
@@ -199,18 +206,25 @@ module "lambda_etl_role" {
   project                   = var.project_name
 }
 
+data aws_s3_object "perform_etl_zip" {
+  bucket = module.code_bucket.bucket_id
+  key    = "perform_etl.zip"
+}
+
 module "spotify_etl_lambda" {
   source                         = "git::https://github.com/amolrairikar/aws-account-infrastructure.git//modules/lambda?ref=main"
   environment                    = var.environment
   project                        = var.project_name
   lambda_name                    = "spotify-etl"
   lambda_description             = "Lambda function to perform ETL on Spotify API recently played tracks response raw JSON"
-  lambda_filename                = "etl_process.zip"
   lambda_handler                 = "perform_etl.lambda_handler"
   lambda_memory_size             = "256"
   lambda_runtime                 = "python3.12"
   lambda_timeout                 = 30
   lambda_execution_role_arn      = module.lambda_etl_role.role_arn
+  s3_bucket_name                 = "lambda-source-code-${data.aws_caller_identity.current.account_id}-bucket"
+  s3_object_key                  = "perform_etl.zip"
+  s3_object_version              = data.aws_s3_object.perform_etl_zip.version_id
   lambda_layers                  = [data.aws_lambda_layer_version.latest_retry_api.arn]
   sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
     lambda_environment_variables = {
