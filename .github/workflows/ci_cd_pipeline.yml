@@ -70,7 +70,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y zip
 
       - name: Check if layer folder changed
-        id: detect_layer_change
+        id: detect_lambda_change
         run: |
           wget --tries=3 https://raw.githubusercontent.com/amolrairikar/aws-account-infrastructure-setup/refs/heads/main/scripts/detect_lambda_changes.sh
           chmod +x ./detect_lambda_changes.sh
@@ -81,15 +81,15 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build Lambda layer package
-        if: steps.detect_layer_change.outputs.changed == 'true'
+      - name: Build Lambda package
+        if: steps.detect_lambda_change.outputs.changed == 'true'
         run: |
           wget --tries=3 https://raw.githubusercontent.com/amolrairikar/aws-account-infrastructure-setup/refs/heads/main/scripts/build_lambda_package.sh
           chmod +x ./build_lambda_package.sh
-          ./build_lambda_package.sh "${{ matrix.lambda.name }}" "${{ matrix.lambda.path }}"
+          ./build_lambda_package.sh "${{ matrix.lambda.name }}" "${{ matrix.lambda.handler_file }}" "${{ matrix.lambda.path }}"
 
       - name: Upload Lambda layer to S3
-        if: steps.detect_layer_change.outputs.changed == 'true'
+        if: steps.detect_lambda_change.outputs.changed == 'true'
         run: |
           aws s3 cp "${{ matrix.lambda.path }}/${{ matrix.lambda.name }}.zip" \
             s3://${{ secrets.S3_CODE_BUCKET_NAME }}/${{ matrix.lambda.name }}.zip
