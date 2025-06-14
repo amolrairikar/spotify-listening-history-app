@@ -103,7 +103,7 @@ module "lambda_get_recently_played_role" {
 }
 
 data aws_s3_object "get_recently_played_zip" {
-  bucket = module.code_bucket.bucket_id
+  bucket = "lambda-source-code-${data.aws_caller_identity.current.account_id}-bucket"
   key    = "get_recently_played.zip"
 }
 
@@ -207,7 +207,7 @@ module "lambda_etl_role" {
 }
 
 data aws_s3_object "perform_etl_zip" {
-  bucket = module.code_bucket.bucket_id
+  bucket = "lambda-source-code-${data.aws_caller_identity.current.account_id}-bucket"
   key    = "perform_etl.zip"
 }
 
