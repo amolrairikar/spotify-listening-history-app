@@ -92,7 +92,7 @@ jobs:
         if: steps.detect_lambda_change.outputs.changed == 'true'
         run: |
           aws s3 cp "${{ matrix.lambda.path }}/${{ matrix.lambda.name }}.zip" \
-            s3://${{ secrets.S3_CODE_BUCKET_NAME }}/spotify-${{ matrix.lambda.name }}.zip
+            s3://${{ secrets.S3_CODE_BUCKET_NAME }}/spotify_${{ matrix.lambda.name }}.zip
 
   deploy_infrastructure:
     runs-on: ubuntu-latest
