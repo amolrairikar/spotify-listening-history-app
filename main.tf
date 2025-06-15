@@ -30,7 +30,7 @@ module "eventbridge_scheduler" {
   schedule_frequency   = "rate(1 hour)"
   schedule_timezone    = "America/Chicago"
   schedule_state       = "ENABLED"
-  scheduler_name       = "spotify-listening-history-app-eventbridge-scheduler"
+  scheduler_name       = "spotify-listening-history-lambda-trigger"
 }
 
 data "aws_lambda_layer_version" "latest_retry_api" {
