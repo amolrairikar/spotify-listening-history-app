@@ -123,10 +123,11 @@ module "spotify_get_recently_played_lambda" {
   s3_object_version              = data.aws_s3_object.get_recently_played_zip.version_id
   lambda_layers                  = [data.aws_lambda_layer_version.latest_retry_api.arn]
   sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
-    lambda_environment_variables = {
-      CLIENT_ID      = var.spotify_client_id
-      CLIENT_SECRET  = var.spotify_client_secret
-      S3_BUCKET_NAME = module.spotify_project_data_bucket.bucket_id
+  log_retention_days             = 7
+  lambda_environment_variables = {
+    CLIENT_ID      = var.spotify_client_id
+    CLIENT_SECRET  = var.spotify_client_secret
+    S3_BUCKET_NAME = module.spotify_project_data_bucket.bucket_id
   }
 }
 
@@ -227,7 +228,8 @@ module "spotify_etl_lambda" {
   s3_object_version              = data.aws_s3_object.perform_etl_zip.version_id
   lambda_layers                  = [data.aws_lambda_layer_version.latest_retry_api.arn]
   sns_topic_arn                  = "arn:aws:sns:${var.aws_region_name}:${data.aws_caller_identity.current.account_id}:lambda-failure-notification-topic"
-    lambda_environment_variables = {
-      S3_BUCKET_NAME = module.spotify_project_data_bucket.bucket_id
+  log_retention_days             = 7
+  lambda_environment_variables = {
+    S3_BUCKET_NAME = module.spotify_project_data_bucket.bucket_id
   }
 }

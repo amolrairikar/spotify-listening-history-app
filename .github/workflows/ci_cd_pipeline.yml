@@ -131,6 +131,11 @@ jobs:
             -backend-config="region=${TF_VAR_aws_region_name}" \
             -backend-config="assume_role={role_arn=\"${TF_VAR_infra_role_arn}\", session_name=\"terraform-session\"}"
 
+      - name: Import log groups (temp)
+        run: |
+          terraform import module.spotify_get_recently_played_lambda.aws_cloudwatch_log_group.this /aws/lambda/spotify-listening-history
+          terraform import module.spotify_etl_lambda.aws_cloudwatch_log_group.this /aws/lambda/spotify-etl
+
       - name: Plan Terraform
         run: |
           echo "Planning Terraform configuration..."
